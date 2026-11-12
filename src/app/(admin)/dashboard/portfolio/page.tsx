@@ -373,7 +373,7 @@ export default function PortfolioManagementPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[680px] text-left text-xs">
               <thead>
                 <tr className="border-b border-border/60 text-muted-foreground uppercase tracking-wider">
                   <th className="pb-3 font-semibold">Mülk &amp; Lokasyon</th>

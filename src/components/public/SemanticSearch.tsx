@@ -345,7 +345,7 @@ export function SemanticSearch({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {results.map((property, idx) => (
             <div key={property.id} className="flex flex-col h-full space-y-2.5">
               {/* Property Card */}

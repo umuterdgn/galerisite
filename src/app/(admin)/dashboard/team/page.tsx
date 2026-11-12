@@ -375,7 +375,7 @@ export default function AgencyTeamManagementPage() {
 
           {/* Table: Team Members */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[640px] text-left text-xs">
               <thead>
                 <tr className="border-b border-border/60 text-muted-foreground uppercase tracking-wider">
                   <th className="pb-3 font-semibold">Personel</th>
@@ -506,7 +506,7 @@ export default function AgencyTeamManagementPage() {
 
           {/* Scoped Properties Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[640px] text-left text-xs">
               <thead>
                 <tr className="border-b border-border/60 text-muted-foreground uppercase tracking-wider">
                   <th className="pb-3 font-semibold">İlan &amp; Konum</th>

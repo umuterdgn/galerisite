@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Menu } from "lucide-react";
@@ -11,6 +11,21 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile drawer automatically on route navigation
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll while mobile drawer is open
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileMenuOpen]);
 
   // /admin/login, /[locale]/admin/login veya /login rotalarında sidebar gizlenir
   const isLoginRoute = /^(\/(tr|en))?(\/admin)?\/login\/?$/.test(pathname);
@@ -80,7 +95,7 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto overflow-x-hidden">
           {children}
         </main>
       </div>

@@ -434,7 +434,7 @@ export default function AppointmentsCalendarDashboardPage() {
         {viewMode === "LIST" && (
           <div className="rounded-3xl border border-border bg-card/60 p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-4">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full min-w-[640px] text-left text-xs">
                 <thead>
                   <tr className="border-b border-border/60 text-muted-foreground uppercase tracking-wider">
                     <th className="pb-3 font-semibold">Misafir &amp; İletişim</th>

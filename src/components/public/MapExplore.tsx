@@ -26,6 +26,8 @@ import {
   Layers,
   Loader2,
   Building2,
+  Hand,
+  Lock,
 } from "lucide-react";
 
 export interface MapPropertyItem {
@@ -136,6 +138,7 @@ export function MapExplore({
     useState<MapPropertyItem | null>(null);
   const [activeDestination, setActiveDestination] = useState<string>("");
   const [showPoiFilter, setShowPoiFilter] = useState<boolean>(true);
+  const [isMapTouchUnlocked, setIsMapTouchUnlocked] = useState<boolean>(false);
 
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -440,15 +443,22 @@ export function MapExplore({
           </div>
         </div>
       ) : token ? (
-        <Map
-          ref={mapRef}
-          {...viewState}
-          onMove={(evt) => setViewState(evt.viewState)}
-          mapStyle={mapStyle}
-          mapboxAccessToken={token}
-          style={{ width: "100%", height: "620px" }}
-          attributionControl={false}
+        <div
+          className={`relative h-[440px] sm:h-[540px] md:h-[620px] w-full ${
+            isMapTouchUnlocked ? "touch-none select-none" : "touch-pan-y"
+          }`}
         >
+          <Map
+            ref={mapRef}
+            {...viewState}
+            onMove={(evt) => setViewState(evt.viewState)}
+            mapStyle={mapStyle}
+            mapboxAccessToken={token}
+            dragPan={true}
+            touchZoomRotate={true}
+            style={{ width: "100%", height: "100%" }}
+            attributionControl={false}
+          >
           <NavigationControl position="bottom-right" showCompass showZoom />
           <FullscreenControl position="bottom-right" />
 
@@ -597,7 +607,40 @@ export function MapExplore({
               </div>
             </Popup>
           )}
-        </Map>
+          </Map>
+
+          {/* Mobile Touch Activation Overlay */}
+          {!isMapTouchUnlocked && (
+            <div
+              onClick={() => setIsMapTouchUnlocked(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") setIsMapTouchUnlocked(true);
+              }}
+              className="md:hidden absolute inset-0 z-10 flex flex-col items-center justify-center bg-obsidian-950/35 px-4 text-center backdrop-blur-[1px] touch-pan-y"
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-gold-400/70 bg-obsidian-950/90 px-4 py-2.5 text-xs font-semibold text-gold-300 shadow-luxury-glass backdrop-blur-xl">
+                <Hand className="h-4 w-4 text-gold-400 animate-pulse" />
+                <span>Haritada Gezinmek İçin Dokunun</span>
+              </div>
+              <p className="mt-2 text-[10px] font-medium text-slate-200/90 drop-shadow">
+                Sayfayı kaydırmaya devam etmek için aşağı kaydırın
+              </p>
+            </div>
+          )}
+
+          {isMapTouchUnlocked && (
+            <button
+              type="button"
+              onClick={() => setIsMapTouchUnlocked(false)}
+              className="md:hidden absolute left-3 bottom-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-gold-500/40 bg-obsidian-950/90 px-3 py-1.5 text-[11px] font-semibold text-gold-300 shadow-lg backdrop-blur-xl"
+            >
+              <Lock className="h-3 w-3 text-gold-400" />
+              <span>Sayfayı Kaydır</span>
+            </button>
+          )}
+        </div>
       ) : (
         /* Live Prisma Canvas Fallback when NEXT_PUBLIC_MAPBOX_TOKEN is not set */
         <div className="relative min-h-[580px] w-full flex flex-col items-center justify-center bg-gradient-to-b from-navy-950 via-obsidian-950 to-obsidian-900 p-6 pt-20 text-center overflow-hidden">
@@ -626,7 +669,7 @@ export function MapExplore({
             </p>
 
             {/* Real Database Property Pins Summary Cards */}
-            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 text-left">
+            <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 text-left">
               {visibleFallbackProperties.slice(0, 6).map((prop) => {
                 const isSelected = selectedProperty?.id === prop.id;
                 return (

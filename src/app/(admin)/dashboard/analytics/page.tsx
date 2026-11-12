@@ -302,8 +302,9 @@ export default function AdminAnalyticsPage() {
             </div>
           </div>
 
-          <div className="h-80 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="overflow-x-auto pb-2">
+            <div className="h-72 sm:h-80 w-full min-w-[480px] sm:min-w-0 pt-2">
+              <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={TRAFFIC_DENSITY_7D}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -374,6 +375,7 @@ export default function AdminAnalyticsPage() {
                 <Area type="monotone" dataKey="yalikavak" name="yalikavak" stroke="#A855F7" strokeWidth={2} fill="url(#gradYalikavak)" />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-border/70 text-xs">

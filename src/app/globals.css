@@ -54,6 +54,15 @@
     @apply bg-background text-foreground antialiased selection:bg-gold-500/20 selection:text-gold-400;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Prevent mobile browsers (iOS Safari) from auto-zooming on focus */
+  @media screen and (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
 }
 
 /* Luxury custom scrollbars */

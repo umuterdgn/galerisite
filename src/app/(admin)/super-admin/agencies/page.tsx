@@ -515,7 +515,7 @@ export default function SuperAdminAgenciesPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[680px] text-left border-collapse">
               <thead>
                 <tr className="border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground">
                   <th className="pb-3 font-medium">Ajans &amp; Alt Alan Adı</th>

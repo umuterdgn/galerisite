@@ -84,6 +84,16 @@ export function Navbar() {
     };
   }, []);
 
+  // Lock body scroll when full-screen mobile overlay is open
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileMenuOpen]);
+
   const openDropdown = () => {
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
@@ -106,7 +116,8 @@ export function Navbar() {
   const isFeatureActive = pathname.startsWith("/features/");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gold-500/15 bg-background/80 backdrop-blur-xl transition-colors duration-300">
+    <>
+      <header className="sticky top-0 z-40 border-b border-gold-500/15 bg-background/80 backdrop-blur-xl transition-colors duration-300">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
@@ -264,90 +275,193 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
-            className="inline-flex items-center justify-center p-2 rounded-lg text-muted-foreground hover:text-foreground md:hidden"
-            aria-label="Menü"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gold-500/25 bg-card/70 text-foreground hover:border-gold-500/50 hover:text-gold-400 transition-colors md:hidden"
+            aria-label={mobileMenuOpen ? "Menüyü Kapat" : "Menüyü Aç"}
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5 text-gold-400" />
             ) : (
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5 text-gold-400" />
             )}
           </button>
         </div>
       </div>
+    </header>
 
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="border-b border-border bg-background/95 px-5 py-4 backdrop-blur-2xl md:hidden">
-          <nav className="flex flex-col space-y-2.5">
-            <Link
-              href="/properties"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
-                isCollectionActive
-                  ? "bg-gold-500/15 text-gold-400 border border-gold-500/30"
-                  : "text-foreground hover:bg-card hover:text-gold-400"
-              }`}
+      {/* Luxury Full-Screen Mobile Overlay Menu (Obsidian & Gold) */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="fixed inset-0 z-50 flex flex-col bg-[#05060a]/98 text-white backdrop-blur-2xl md:hidden overflow-y-auto"
+          >
+            {/* Subtle Gold & Navy Ambient Glow inside Fullscreen Overlay */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none fixed inset-0 overflow-hidden"
             >
-              <LayoutGrid className="h-4 w-4 text-gold-500" />
-              <span>{t("collection")}</span>
-            </Link>
-
-            {/* Mobile Accordion for Platform Özellikleri */}
-            <div className="rounded-xl border border-border/70 bg-card/40">
-              <button
-                type="button"
-                onClick={() => setMobileFeaturesOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-foreground"
-              >
-                <span>{t("features")}</span>
-                <ChevronDown
-                  className={`h-4 w-4 text-gold-400 transition-transform ${
-                    mobileFeaturesOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {mobileFeaturesOpen && (
-                <div className="border-t border-border/60 px-2 py-2 space-y-1">
-                  {PLATFORM_FEATURES.map((feature) => (
-                    <Link
-                      key={feature.slug}
-                      href={feature.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${
-                        pathname === feature.href
-                          ? "bg-gold-500/15 text-gold-400"
-                          : "text-muted-foreground hover:bg-card hover:text-gold-400"
-                      }`}
-                    >
-                      {renderFeatureIcon(feature.iconName)}
-                      <span>{feature.title}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-gold-500/15 blur-[110px]" />
+              <div className="absolute bottom-0 -left-24 h-72 w-72 rounded-full bg-navy-800/40 blur-[120px]" />
             </div>
 
-            <Link
-              href="/#b2b-ortaklik"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-xl px-3 py-2 text-sm font-medium text-foreground hover:bg-card hover:text-gold-400"
-            >
-              {t("integration")}
-            </Link>
+            {/* Overlay Top Bar */}
+            <div className="relative z-10 flex items-center justify-between border-b border-gold-500/20 px-5 py-4">
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2.5"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-gold-500/40 bg-gradient-to-br from-gold-500/25 via-navy-900 to-obsidian-950 shadow-gold-sm">
+                  <Gem className="h-4 w-4 text-gold-400" />
+                </div>
+                <div>
+                  <span className="font-serif text-lg font-bold tracking-widest text-white">
+                    {t("brand")}
+                  </span>
+                  <span className="ml-1.5 text-[9px] font-bold tracking-widest text-gold-400 uppercase">
+                    {t("brandSubtitle")}
+                  </span>
+                </div>
+              </Link>
 
-            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gold-500/35 bg-white/5 text-gold-400 hover:bg-gold-500/15 transition-colors"
+                aria-label="Menüyü Kapat"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Navigation Links */}
+            <nav className="relative z-10 flex-1 space-y-2.5 px-5 py-6">
+              <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-gold-500/80">
+                Keşif &amp; Koleksiyon
+              </p>
+
+              <Link
+                href="/#vitrin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-base font-serif font-semibold text-white hover:border-gold-500/40 hover:text-gold-300 transition-colors"
+              >
+                <span>{t("portfolio")}</span>
+                <ArrowUpRight className="h-4 w-4 text-gold-400" />
+              </Link>
+
+              <Link
+                href="/properties"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center justify-between rounded-2xl border px-4 py-3.5 text-base font-serif font-semibold transition-colors ${
+                  isCollectionActive
+                    ? "border-gold-500/50 bg-gold-500/15 text-gold-300 shadow-gold-sm"
+                    : "border-white/10 bg-white/[0.03] text-white hover:border-gold-500/40 hover:text-gold-300"
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <LayoutGrid className="h-4 w-4 text-gold-400" />
+                  <span>{t("collection")}</span>
+                </span>
+                <ArrowUpRight className="h-4 w-4 text-gold-400" />
+              </Link>
+
+              {/* Platform Özellikleri Accordion */}
+              <div className="rounded-2xl border border-gold-500/25 bg-white/[0.03] overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setMobileFeaturesOpen((prev) => !prev)}
+                  className="flex w-full items-center justify-between px-4 py-3.5 text-base font-serif font-semibold text-white"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Sparkles className="h-4 w-4 text-gold-400" />
+                    <span>{t("features")}</span>
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-gold-400 transition-transform duration-200 ${
+                      mobileFeaturesOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {mobileFeaturesOpen && (
+                  <div className="border-t border-gold-500/15 px-3 py-2.5 space-y-1.5">
+                    {PLATFORM_FEATURES.map((feature) => (
+                      <Link
+                        key={feature.slug}
+                        href={feature.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                          pathname === feature.href
+                            ? "border border-gold-500/35 bg-gold-500/15 text-gold-300"
+                            : "text-zinc-300 hover:bg-white/5 hover:text-gold-300"
+                        }`}
+                      >
+                        {renderFeatureIcon(feature.iconName)}
+                        <span>{feature.title}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Link
+                href="/#off-market"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-base font-serif font-semibold text-white hover:border-gold-500/40 hover:text-gold-300 transition-colors"
+              >
+                <span>{t("offMarket")}</span>
+                <ArrowUpRight className="h-4 w-4 text-gold-400" />
+              </Link>
+
+              <Link
+                href="/#geo-kesif"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-base font-serif font-semibold text-white hover:border-gold-500/40 hover:text-gold-300 transition-colors"
+              >
+                <span className="flex items-center gap-2.5">
+                  <MapPin className="h-4 w-4 text-gold-400" />
+                  <span>{t("geo")}</span>
+                </span>
+                <ArrowUpRight className="h-4 w-4 text-gold-400" />
+              </Link>
+
+              <Link
+                href="/#b2b-ortaklik"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-base font-serif font-semibold text-white hover:border-gold-500/40 hover:text-gold-300 transition-colors"
+              >
+                <span>{t("integration")}</span>
+                <ArrowUpRight className="h-4 w-4 text-gold-400" />
+              </Link>
+            </nav>
+
+            {/* Bottom Controls & Portal Entry CTA */}
+            <div className="relative z-10 mt-auto border-t border-gold-500/20 bg-[#080a10]/95 px-5 py-5 space-y-4">
+              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+                <span className="text-xs font-medium text-zinc-400">
+                  Dil &amp; Tema Tercihi
+                </span>
+                <div className="flex items-center gap-2.5">
+                  <LanguageSwitcher />
+                  <ThemeToggle />
+                </div>
+              </div>
+
               <Link href="/admin/login" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="gold" size="sm" className="w-full">
-                  {t("b2bPortal")}
+                <Button variant="gold" size="lg" className="w-full justify-center gap-2 text-sm font-bold">
+                  <span>{t("b2bPortal")}</span>
+                  <ArrowUpRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
-          </nav>
-        </div>
-      )}
-    </header>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

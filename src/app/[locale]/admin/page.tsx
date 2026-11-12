@@ -146,7 +146,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[640px] text-left text-xs">
               <thead>
                 <tr className="border-b border-border/60 text-muted-foreground uppercase tracking-wider">
                   <th className="pb-3 font-semibold">Mülk & Konum</th>

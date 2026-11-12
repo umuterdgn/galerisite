@@ -17,6 +17,8 @@ import {
   X,
   Layers,
   CheckCircle2,
+  Hand,
+  Lock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -170,6 +172,7 @@ export function VirtualTour({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [areHotspotsVisible, setAreHotspotsVisible] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isTouchUnlocked, setIsTouchUnlocked] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -465,8 +468,43 @@ export function VirtualTour({
       {/* 360 Viewer Canvas Container */}
       <div
         ref={containerRef}
-        className="relative h-[480px] w-full sm:h-[620px] md:h-[680px] cursor-grab active:cursor-grabbing"
+        className={`relative h-[380px] w-full sm:h-[540px] md:h-[640px] cursor-grab active:cursor-grabbing ${
+          isTouchUnlocked ? "touch-none select-none" : "touch-pan-y"
+        }`}
       />
+
+      {/* Mobile Touch Activation Shield: Prevents accidental scroll hijacking while letting page scroll smoothly */}
+      {!isTouchUnlocked && isLoaded && (
+        <div
+          onClick={() => setIsTouchUnlocked(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") setIsTouchUnlocked(true);
+          }}
+          className="md:hidden absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#06070a]/35 px-4 text-center backdrop-blur-[1px] touch-pan-y"
+        >
+          <div className="inline-flex items-center gap-2 rounded-full border border-gold-400/70 bg-[#06070a]/90 px-4 py-2.5 text-xs font-semibold text-gold-300 shadow-[0_8px_30px_rgba(0,0,0,0.65)] backdrop-blur-xl">
+            <Hand className="h-4 w-4 text-gold-400 animate-pulse" />
+            <span>360° Gezinmek İçin Dokunun</span>
+          </div>
+          <p className="mt-2 text-[10px] font-medium text-zinc-300/90 drop-shadow">
+            Sayfayı kaydırmaya devam etmek için aşağı kaydırın
+          </p>
+        </div>
+      )}
+
+      {/* Mobile Exit Touch-Pan Mode Pill */}
+      {isTouchUnlocked && (
+        <button
+          type="button"
+          onClick={() => setIsTouchUnlocked(false)}
+          className="md:hidden absolute left-3 bottom-16 z-30 inline-flex items-center gap-1.5 rounded-full border border-gold-500/40 bg-[#06070a]/90 px-3 py-1.5 text-[11px] font-semibold text-gold-300 shadow-lg backdrop-blur-xl"
+        >
+          <Lock className="h-3 w-3 text-gold-400" />
+          <span>Sayfayı Kaydır</span>
+        </button>
+      )}
 
       {/* Luxury Loading Spinner Overlay */}
       {!isLoaded && (
