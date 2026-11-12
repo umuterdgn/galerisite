@@ -9,7 +9,7 @@
     "offMarket": "Off-Market",
     "geo": "GEO Lokasyonlar",
     "integration": "Ajans Entegrasyonu",
-    "b2bPortal": "B2B Portal"
+    "b2bPortal": "Giriş"
   },
   "Hero": {
     "badge": "Yeni Nesil Multi-Tenant B2B Emlak Ekosistemi",
@@ -17,7 +17,7 @@
     "titleHighlight": "Deneyimi",
     "subtitle": "Yapay zeka destekli sanal sahneleme (AI Virtual Staging), küresel GEO hedefleme ve akredite emlak ajansları için tasarlanmış ayrıcalıklı portföy yönetim platformu.",
     "ctaPrimary": "Özel Portföyü İnceleyin",
-    "ctaSecondary": "B2B Ajans Portalı",
+    "ctaSecondary": "Giriş",
     "searchAllCities": "Tüm GEO Destinasyonlar",
     "searchAllTypes": "Tüm Mülkler",
     "searchMansion": "Yalı & Malikâne",

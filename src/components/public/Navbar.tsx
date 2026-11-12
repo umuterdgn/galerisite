@@ -253,7 +253,7 @@ export function Navbar() {
           <LanguageSwitcher />
           <ThemeToggle />
 
-          <Link href="/admin" className="hidden sm:inline-flex">
+          <Link href="/admin/login" className="hidden sm:inline-flex">
             <Button variant="gold" size="sm">
               <span>{t("b2bPortal")}</span>
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -338,7 +338,7 @@ export function Navbar() {
             </Link>
 
             <div className="pt-2">
-              <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/admin/login" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="gold" size="sm" className="w-full">
                   {t("b2bPortal")}
                 </Button>

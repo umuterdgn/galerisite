@@ -1,21 +1,86 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { MediaType } from "@prisma/client";
 import { cloudinary } from "@/lib/cloudinary";
+import prisma from "@/lib/prisma";
+
+const VALID_MEDIA_TYPES = new Set<string>(Object.values(MediaType));
+
+async function persistUploadedMediaIfRequested(params: {
+  persist: boolean;
+  propertyId: string;
+  url: string;
+  mediaType: string;
+  roomLabel: string;
+  isStaged: boolean;
+  sortOrder: number;
+}) {
+  if (!params.persist || !params.propertyId) return null;
+
+  const resolvedType = VALID_MEDIA_TYPES.has(params.mediaType)
+    ? (params.mediaType as MediaType)
+    : MediaType.IMAGE;
+
+  const created = await prisma.media.create({
+    data: {
+      property: { connect: { id: params.propertyId } },
+      url: params.url,
+      type: resolvedType,
+      roomLabel: params.roomLabel || (resolvedType === MediaType.PANORAMA_360 ? "Sanal Oda" : null),
+      isStaged: params.isStaged,
+      sortOrder: params.sortOrder,
+    },
+  });
+
+  revalidateTag("properties");
+  revalidatePath("/", "layout");
+  revalidatePath(`/properties/${params.propertyId}`);
+  revalidatePath(`/tr/properties/${params.propertyId}`);
+  revalidatePath(`/en/properties/${params.propertyId}`);
+
+  return created;
+}
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const mediaType = (formData.get("mediaType") as string) || "IMAGE";
-    const roomLabel = (formData.get("roomLabel") as string) || "";
+    const mediaType = ((formData.get("mediaType") as string) || "IMAGE").trim();
+    const roomLabel = ((formData.get("roomLabel") as string) || "").trim();
     const isStaged = formData.get("isStaged") === "true";
+    const propertyId = ((formData.get("propertyId") as string) || "").trim();
+    const persist = formData.get("persist") === "true";
+    const sortOrderRaw = Number(formData.get("sortOrder") ?? 0);
+    const sortOrder = Number.isFinite(sortOrderRaw) ? sortOrderRaw : 0;
 
     if (!file) {
       return NextResponse.json(
         { error: "Dosya bulunamadı." },
         { status: 400 }
       );
+    }
+
+    if (mediaType === MediaType.PANORAMA_360 || persist) {
+      if (!propertyId) {
+        return NextResponse.json(
+          { error: "360° medya yüklemek için ilan seçimi (propertyId) zorunludur." },
+          { status: 400 }
+        );
+      }
+
+      const targetProperty = await prisma.property.findUnique({
+        where: { id: propertyId },
+        select: { id: true },
+      });
+
+      if (!targetProperty) {
+        return NextResponse.json(
+          { error: "Seçili ilan veritabanında bulunamadı." },
+          { status: 404 }
+        );
+      }
     }
 
     const bytes = await file.arrayBuffer();
@@ -71,10 +136,22 @@ export async function POST(req: NextRequest) {
         uploadStream.end(buffer);
       });
 
+      const persisted = await persistUploadedMediaIfRequested({
+        persist,
+        propertyId,
+        url: uploadResult.secure_url,
+        mediaType,
+        roomLabel,
+        isStaged,
+        sortOrder,
+      });
+
       return NextResponse.json({
         success: true,
         storage: "cloudinary",
         media: {
+          id: persisted?.id,
+          propertyId: propertyId || undefined,
           url: uploadResult.secure_url,
           publicId: uploadResult.public_id,
           type: mediaType,
@@ -98,12 +175,25 @@ export async function POST(req: NextRequest) {
     const targetPath = path.join(uploadDir, fileName);
 
     await writeFile(targetPath, buffer);
+    const localUrl = `/uploads/tours/${fileName}`;
+
+    const persisted = await persistUploadedMediaIfRequested({
+      persist,
+      propertyId,
+      url: localUrl,
+      mediaType,
+      roomLabel,
+      isStaged,
+      sortOrder,
+    });
 
     return NextResponse.json({
       success: true,
       storage: "local-dev",
       media: {
-        url: `/uploads/tours/${fileName}`,
+        id: persisted?.id,
+        propertyId: propertyId || undefined,
+        url: localUrl,
         publicId: fileName,
         type: mediaType,
         roomLabel,

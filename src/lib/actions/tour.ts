@@ -65,40 +65,41 @@ export async function savePanoramaMediaRecord(input: {
   roomLabel: string;
   sortOrder?: number;
 }) {
-  try {
-    if (!input.propertyId || !input.url) {
-      throw new Error("İlan ID ve panorama URL zorunludur.");
-    }
+  const propertyId = input.propertyId?.trim();
+  const url = input.url?.trim();
 
-    const media = await prisma.media.create({
-      data: {
-        propertyId: input.propertyId,
-        url: input.url,
-        type: MediaType.PANORAMA_360,
-        roomLabel: input.roomLabel || "Sanal Oda",
-        isStaged: false,
-        sortOrder: input.sortOrder ?? 0,
-      },
-    });
-
-    revalidateTourTargets(input.propertyId);
-
-    return {
-      success: true,
-      storage: "prisma" as const,
-      mediaId: media.id,
-      url: media.url,
-    };
-  } catch (err) {
-    console.warn("Prisma savePanoramaMediaRecord fallback:", err);
-    revalidateTourTargets(input.propertyId);
-    return {
-      success: true,
-      storage: "memory" as const,
-      mediaId: `media-${Date.now()}`,
-      url: input.url,
-    };
+  if (!propertyId || !url) {
+    throw new Error("İlan seçimi (propertyId) ve panorama URL zorunludur.");
   }
+
+  const targetProperty = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { id: true },
+  });
+
+  if (!targetProperty) {
+    throw new Error("Seçili ilan veritabanında bulunamadı.");
+  }
+
+  const media = await prisma.media.create({
+    data: {
+      property: { connect: { id: propertyId } },
+      url,
+      type: MediaType.PANORAMA_360,
+      roomLabel: input.roomLabel?.trim() || "Sanal Oda",
+      isStaged: false,
+      sortOrder: input.sortOrder ?? 0,
+    },
+  });
+
+  revalidateTourTargets(propertyId);
+
+  return {
+    success: true,
+    storage: "prisma" as const,
+    mediaId: media.id,
+    url: media.url,
+  };
 }
 
 /**
@@ -109,17 +110,21 @@ export async function saveFullVirtualTour(
   propertyId: string,
   rooms: SavedTourRoomPayload[]
 ) {
-  TOUR_MEMORY_STORE[propertyId] = rooms;
+  const cleanPropertyId = propertyId?.trim();
+  if (!cleanPropertyId) {
+    throw new Error("360° sanal tur kaydedebilmek için hedef ilan (propertyId) zorunludur.");
+  }
 
-  try {
-    // 1. İlgili mülkün mevcut schemaJson bilgisini koru ve virtualTour verisini ekle
-    const existingProp = await prisma.property.findUnique({
-      where: { id: propertyId },
+  const sanitizedRooms = rooms.filter((r) => Boolean(r.panoramaUrl?.trim()));
+
+  const result = await prisma.$transaction(async (tx) => {
+    const existingProp = await tx.property.findUnique({
+      where: { id: cleanPropertyId },
       select: { id: true, schemaJson: true },
     });
 
     if (!existingProp) {
-      throw new Error("Property record not found in PostgreSQL");
+      throw new Error("Seçili ilan veritabanında bulunamadı.");
     }
 
     const currentSchema =
@@ -133,55 +138,50 @@ export async function saveFullVirtualTour(
       ...currentSchema,
       virtualTour: {
         updatedAt: new Date().toISOString(),
-        roomCount: rooms.length,
-        rooms,
+        roomCount: sanitizedRooms.length,
+        rooms: sanitizedRooms,
       },
     };
 
-    await prisma.property.update({
-      where: { id: propertyId },
+    await tx.property.update({
+      where: { id: cleanPropertyId },
       data: {
         schemaJson: mergedSchema as unknown as Prisma.InputJsonValue,
       },
     });
 
-    // 2. Mülkün eski PANORAMA_360 kayıtlarını temizle ve güncel odaları PANORAMA_360 olarak yaz
-    await prisma.media.deleteMany({
+    await tx.media.deleteMany({
       where: {
-        propertyId,
+        propertyId: cleanPropertyId,
         type: MediaType.PANORAMA_360,
       },
     });
 
-    if (rooms.length > 0) {
-      await prisma.media.createMany({
-        data: rooms.map((room, idx) => ({
-          propertyId,
-          url: room.panoramaUrl,
+    for (let idx = 0; idx < sanitizedRooms.length; idx++) {
+      const room = sanitizedRooms[idx];
+      await tx.media.create({
+        data: {
+          property: { connect: { id: cleanPropertyId } },
+          url: room.panoramaUrl.trim(),
           type: MediaType.PANORAMA_360,
-          roomLabel: room.roomLabel,
+          roomLabel: room.roomLabel?.trim() || `Oda ${idx + 1}`,
           isStaged: false,
           sortOrder: idx,
-        })),
+        },
       });
     }
 
-    revalidateTourTargets(propertyId);
+    return sanitizedRooms.length;
+  });
 
-    return {
-      success: true,
-      storage: "prisma" as const,
-      savedRooms: rooms.length,
-    };
-  } catch (err) {
-    console.warn("Prisma saveFullVirtualTour fallback:", err);
-    revalidateTourTargets(propertyId);
-    return {
-      success: true,
-      storage: "memory" as const,
-      savedRooms: rooms.length,
-    };
-  }
+  TOUR_MEMORY_STORE[cleanPropertyId] = sanitizedRooms;
+  revalidateTourTargets(cleanPropertyId);
+
+  return {
+    success: true,
+    storage: "prisma" as const,
+    savedRooms: result,
+  };
 }
 
 /**
@@ -191,10 +191,21 @@ export async function loadPropertyVirtualTour(propertyId: string): Promise<{
   rooms: SavedTourRoomPayload[] | null;
   source: "prisma" | "memory" | "none";
 }> {
+  const cleanPropertyId = propertyId?.trim();
+  if (!cleanPropertyId) {
+    return { rooms: null, source: "none" };
+  }
+
   try {
     const prop = await prisma.property.findUnique({
-      where: { id: propertyId },
-      select: { schemaJson: true },
+      where: { id: cleanPropertyId },
+      select: {
+        schemaJson: true,
+        media: {
+          where: { type: MediaType.PANORAMA_360 },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
     });
 
     if (
@@ -210,12 +221,22 @@ export async function loadPropertyVirtualTour(propertyId: string): Promise<{
         return { rooms: vt.rooms, source: "prisma" };
       }
     }
-  } catch (err) {
-    console.warn("Prisma loadPropertyVirtualTour fallback:", err);
-  }
 
-  if (TOUR_MEMORY_STORE[propertyId]) {
-    return { rooms: TOUR_MEMORY_STORE[propertyId], source: "memory" };
+    if (prop?.media && prop.media.length > 0) {
+      const mediaRooms: SavedTourRoomPayload[] = prop.media.map((m, idx) => ({
+        id: `media-room-${m.id}`,
+        roomLabel: m.roomLabel || `Oda ${idx + 1}`,
+        customTitle: m.roomLabel || `360° Panorama ${idx + 1}`,
+        captureMode: "equirectangular",
+        panoramaUrl: m.url,
+        sortOrder: m.sortOrder ?? idx,
+        hotspots: [],
+        links: [],
+      }));
+      return { rooms: mediaRooms, source: "prisma" };
+    }
+  } catch (err) {
+    console.warn("Prisma loadPropertyVirtualTour failed:", err);
   }
 
   return { rooms: null, source: "none" };

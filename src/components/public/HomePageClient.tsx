@@ -315,7 +315,7 @@ export function HomePageClient({
                   </Button>
                 </a>
 
-                <Link href="/admin">
+                <Link href="/admin/login">
                   <Button variant="outline" size="lg">
                     <KeyRound className="h-4 w-4 text-gold-400" />
                     <span>{tHero("ctaSecondary")}</span>
@@ -569,8 +569,8 @@ export function HomePageClient({
             <a href="#off-market" className="hover:text-gold-400 transition-colors">
               Off-Market
             </a>
-            <Link href="/admin" className="hover:text-gold-400 transition-colors">
-              B2B Ajans Portalı
+            <Link href="/admin/login" className="hover:text-gold-400 transition-colors">
+              {tHero("ctaSecondary")}
             </Link>
           </div>
 

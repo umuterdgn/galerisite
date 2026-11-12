@@ -168,8 +168,8 @@ export function RoomPreview3D({
 
     const sphereMat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
-      transparent: mode === "cubemap",
-      opacity: mode === "cubemap" ? 0 : 1,
+      transparent: mode === "cubemap" || !panoramaUrl.trim(),
+      opacity: mode === "cubemap" || !panoramaUrl.trim() ? 0 : 1,
     });
 
     const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
@@ -227,6 +227,9 @@ export function RoomPreview3D({
           }
         }
       );
+    } else if (!panoramaUrl.trim()) {
+      setLoadError(null);
+      setIsLoadingTexture(false);
     } else {
       const texLoader = new THREE.TextureLoader();
       texLoader.setCrossOrigin("anonymous");
@@ -475,6 +478,22 @@ export function RoomPreview3D({
           </p>
         </div>
       )}
+
+      {/* Empty State when no panorama uploaded yet */}
+      {!isLoadingTexture &&
+        !loadError &&
+        mode === "equirectangular" &&
+        !panoramaUrl.trim() && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#04060a]/80 px-6 text-center backdrop-blur-sm">
+            <Compass className="h-10 w-10 text-gold-400/50" />
+            <p className="mt-3 font-serif text-sm font-semibold text-foreground">
+              Bu oda için henüz 360° görsel yüklenmedi
+            </p>
+            <p className="mt-1 max-w-md text-xs text-muted-foreground">
+              Yukarıdaki formdan önce hedef ilanı seçin, ardından 2:1 oranlı 360° panorama veya 6 yönlü Cubemap fotoğraf yükleyin.
+            </p>
+          </div>
+        )}
 
       {/* Error Indicator */}
       {loadError && (

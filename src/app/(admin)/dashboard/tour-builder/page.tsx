@@ -72,77 +72,38 @@ const CUBEMAP_FACE_DEFS: {
   { key: "bottom", label: "Alt", axisHint: "-Y Zemin" },
 ];
 
-const SAMPLE_CUBEMAP_FACES: CubemapFaces = {
-  front: "https://photo-sphere-viewer-data.netlify.app/assets/cubemap/px.jpg",
-  right: "https://photo-sphere-viewer-data.netlify.app/assets/cubemap/nx.jpg",
-  top: "https://photo-sphere-viewer-data.netlify.app/assets/cubemap/py.jpg",
-  bottom: "https://photo-sphere-viewer-data.netlify.app/assets/cubemap/ny.jpg",
-  back: "https://photo-sphere-viewer-data.netlify.app/assets/cubemap/pz.jpg",
-  left: "https://photo-sphere-viewer-data.netlify.app/assets/cubemap/nz.jpg",
+const EMPTY_CUBEMAP_FACES: CubemapFaces = {
+  front: "",
+  back: "",
+  right: "",
+  left: "",
+  top: "",
+  bottom: "",
 };
 
-const DEFAULT_ROOMS: SavedTourRoomPayload[] = [
-  {
-    id: "room-salon",
+function createEmptyDefaultRoom(): SavedTourRoomPayload {
+  return {
+    id: `room-${Date.now()}`,
     roomLabel: "Salon",
-    customTitle: "Ana Salon & Boğaz Cephesi",
+    customTitle: "Ana Salon",
     captureMode: "equirectangular",
-    panoramaUrl:
-      "https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-4.jpg",
+    panoramaUrl: "",
     sortOrder: 0,
-    hotspots: [
-      {
-        id: "hs-default-1",
-        x: 1.2,
-        y: -2.1,
-        z: -9.7,
-        yaw: 0.123,
-        pitch: -0.212,
-        category: "MİMARİ DETAY",
-        title: "Planika Bioetanol Şömine",
-        description:
-          "Uzaktan kumandalı, bacasız gerçek alevli özel mermer çerçeveli şömine.",
-        spec: "BEV Teknolojisi",
-      },
-    ],
+    hotspots: [],
     links: [],
-  },
-  {
-    id: "room-mutfak",
-    roomLabel: "Mutfak",
-    customTitle: "Gourmet Şef Mutfağı",
-    captureMode: "equirectangular",
-    panoramaUrl:
-      "https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-3.jpg",
-    sortOrder: 1,
-    hotspots: [
-      {
-        id: "hs-default-2",
-        x: 4.1,
-        y: -0.8,
-        z: -9.09,
-        yaw: 0.424,
-        pitch: -0.08,
-        category: "ANKASTRE & CİHAZ",
-        title: "Siemens StudioLine Ankastre",
-        description: "FullTouch TFT akıllı fırın ve indüksiyonlu ocak seti.",
-        spec: "Siemens Black Steel",
-      },
-    ],
-    links: [
-      {
-        id: "lk-default-1",
-        targetRoomId: "room-salon",
-        x: -2.5,
-        y: -1.4,
-        z: 9.58,
-        yaw: -0.255,
-        pitch: -0.14,
-        label: "Ana Salona Geçiş →",
-      },
-    ],
-  },
-];
+  };
+}
+
+const INITIAL_EMPTY_ROOM: SavedTourRoomPayload = {
+  id: "room-initial",
+  roomLabel: "Salon",
+  customTitle: "Ana Salon",
+  captureMode: "equirectangular",
+  panoramaUrl: "",
+  sortOrder: 0,
+  hotspots: [],
+  links: [],
+};
 
 async function readImageAspectInfo(
   file: File
@@ -167,13 +128,22 @@ async function readImageAspectInfo(
 async function uploadFileToMediaApi(
   file: File | Blob,
   filename: string,
-  roomLabel: string
-): Promise<{ url: string; storage: string }> {
+  roomLabel: string,
+  propertyId: string,
+  sortOrder = 0
+): Promise<{ id?: string; url: string; storage: string }> {
+  if (!propertyId.trim()) {
+    throw new Error("Önce 360° görselin bağlanacağı ilanı seçmelisiniz.");
+  }
+
   const formData = new FormData();
   formData.append("file", file, filename);
   formData.append("mediaType", "PANORAMA_360");
   formData.append("roomLabel", roomLabel);
   formData.append("isStaged", "false");
+  formData.append("propertyId", propertyId);
+  formData.append("persist", "true");
+  formData.append("sortOrder", String(sortOrder));
 
   const res = await fetch("/api/upload", {
     method: "POST",
@@ -187,19 +157,22 @@ async function uploadFileToMediaApi(
 
   const data = await res.json();
   return {
+    id: data.media?.id,
     url: data.media?.url,
     storage: data.storage || "cloudinary",
   };
 }
 
 export default function TourBuilderPage() {
-  // Portfolio Properties from Prisma / Fallback
+  // Active Agency Portfolio Properties strictly from Prisma PostgreSQL
   const [properties, setProperties] = useState<AdminPropertyItem[]>([]);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("prop-1");
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [isLoadingTour, setIsLoadingTour] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
 
-  // Rooms State
-  const [rooms, setRooms] = useState<SavedTourRoomPayload[]>(DEFAULT_ROOMS);
-  const [activeRoomId, setActiveRoomId] = useState<string>(DEFAULT_ROOMS[0].id);
+  // Rooms State (starts clean; isolated per selected propertyId)
+  const [rooms, setRooms] = useState<SavedTourRoomPayload[]>([INITIAL_EMPTY_ROOM]);
+  const [activeRoomId, setActiveRoomId] = useState<string>(INITIAL_EMPTY_ROOM.id);
 
   // Required Dual Upload Option ("360 Kamera" vs "6 Yönlü Sabit Çekim")
   const [captureOption, setCaptureOption] = useState<"equirectangular" | "cubemap">(
@@ -264,34 +237,73 @@ export default function TourBuilderPage() {
 
   const activeRoom = rooms.find((r) => r.id === activeRoomId) || rooms[0];
 
-  // 1. Load properties from Prisma on mount
+  // 1. Load active agency properties strictly from Prisma on mount
   useEffect(() => {
+    let active = true;
     (async () => {
+      setIsLoadingProperties(true);
       try {
         const res = await getAdminProperties();
-        if (res.properties.length > 0) {
-          setProperties(res.properties);
-          setSelectedPropertyId(res.properties[0].id);
+        if (!active) return;
+
+        if (res.storageMode === "prisma") {
+          const activeAgencyProps = res.properties.filter(
+            (p) => p.status !== "SOLD" && p.status !== "RENTED"
+          );
+          setProperties(
+            activeAgencyProps.length > 0 ? activeAgencyProps : res.properties
+          );
+        } else {
+          setProperties([]);
         }
       } catch (err) {
-        console.warn("Properties fetch fallback:", err);
+        console.warn("Properties fetch error:", err);
+        if (active) setProperties([]);
+      } finally {
+        if (active) setIsLoadingProperties(false);
       }
     })();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // 2. Load saved virtual tour when property changes
+  // 2. Reset studio state completely and load property-scoped tour when property changes
   useEffect(() => {
-    if (!selectedPropertyId) return;
+    const cleanStarter = createEmptyDefaultRoom();
+    setRooms([cleanStarter]);
+    setActiveRoomId(cleanStarter.id);
+    setCubemapFaces(EMPTY_CUBEMAP_FACES);
+    setClickedCoords(null);
+    setAspectCheckInfo(null);
+
+    if (!selectedPropertyId) {
+      setIsLoadingTour(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingTour(true);
+
     (async () => {
-      const saved = await loadPropertyVirtualTour(selectedPropertyId);
-      if (saved.rooms && saved.rooms.length > 0) {
-        setRooms(saved.rooms);
-        setActiveRoomId(saved.rooms[0].id);
-        if (saved.rooms[0].cubemapFaces) {
-          setCubemapFaces(saved.rooms[0].cubemapFaces);
+      try {
+        const saved = await loadPropertyVirtualTour(selectedPropertyId);
+        if (cancelled) return;
+
+        if (saved.rooms && saved.rooms.length > 0) {
+          setRooms(saved.rooms);
+          setActiveRoomId(saved.rooms[0].id);
+          setCubemapFaces(saved.rooms[0].cubemapFaces || EMPTY_CUBEMAP_FACES);
         }
+      } finally {
+        if (!cancelled) setIsLoadingTour(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedPropertyId]);
 
   const activeCubemapKey = activeRoom.cubemapFaces
@@ -331,6 +343,14 @@ export default function TourBuilderPage() {
   // SEÇENEK 1: 360 Kamera (2:1 Equirectangular) -> Cloudinary + Prisma PANORAMA_360
   const handleEquirectangularFile = useCallback(
     async (file: File) => {
+      if (!selectedPropertyId) {
+        setStatusBanner({
+          type: "error",
+          text: "Yükleme yapabilmek için önce formun en üstündeki 'İlan Seç' menüsünden bir ilan seçmelisiniz.",
+        });
+        return;
+      }
+
       if (!file.type.startsWith("image/")) {
         setStatusBanner({
           type: "error",
@@ -351,33 +371,39 @@ export default function TourBuilderPage() {
           isTwoToOne: info.isTwoToOne,
         });
 
-        // Cloudinary'e yükle (/api/upload)
+        // Cloudinary'e yükle ve seçili propertyId ile bağla (/api/upload)
         const uploaded = await uploadFileToMediaApi(
           file,
           file.name,
-          activeRoom.roomLabel
+          activeRoom.roomLabel,
+          selectedPropertyId,
+          activeRoom.sortOrder
         );
 
-        // Prisma'da ilgili ilana 'PANORAMA_360' olarak kaydet
-        const prismaRes = await savePanoramaMediaRecord({
-          propertyId: selectedPropertyId,
-          url: uploaded.url,
-          roomLabel: activeRoom.roomLabel,
-          sortOrder: activeRoom.sortOrder,
-        });
+        // Eğer /api/upload üzerinden DB id dönmediyse server action üzerinden connect ile bağla
+        const prismaMediaStorage = uploaded.id
+          ? "prisma"
+          : (
+              await savePanoramaMediaRecord({
+                propertyId: selectedPropertyId,
+                url: uploaded.url,
+                roomLabel: activeRoom.roomLabel,
+                sortOrder: activeRoom.sortOrder,
+              })
+            ).storage;
 
-        // Aktif odayı anında önizlemeye bağla
-        setRooms((prev) =>
-          prev.map((r) =>
-            r.id === activeRoom.id
-              ? {
-                  ...r,
-                  captureMode: "equirectangular",
-                  panoramaUrl: uploaded.url,
-                }
-              : r
-          )
+        const nextRooms: SavedTourRoomPayload[] = rooms.map((r) =>
+          r.id === activeRoom.id
+            ? {
+                ...r,
+                captureMode: "equirectangular",
+                panoramaUrl: uploaded.url,
+              }
+            : r
         );
+
+        setRooms(nextRooms);
+        await saveFullVirtualTour(selectedPropertyId, nextRooms);
 
         setStatusBanner({
           type: info.isTwoToOne ? "success" : "info",
@@ -389,9 +415,7 @@ export default function TourBuilderPage() {
                 )}:1) oranında.`
           } Görsel ${
             uploaded.storage === "cloudinary" ? "Cloudinary CDN'e" : "sunucuya"
-          } yüklendi ve Prisma Media (PANORAMA_360, ${
-            prismaRes.storage
-          }) olarak kaydedildi.`,
+          } yüklendi ve Prisma Media (PANORAMA_360, ${prismaMediaStorage}) ile seçili ilana bağlandı.`,
         });
       } catch (err) {
         setStatusBanner({
@@ -405,11 +429,25 @@ export default function TourBuilderPage() {
         setIsUploading360(false);
       }
     },
-    [activeRoom.id, activeRoom.roomLabel, activeRoom.sortOrder, selectedPropertyId]
+    [
+      activeRoom.id,
+      activeRoom.roomLabel,
+      activeRoom.sortOrder,
+      rooms,
+      selectedPropertyId,
+    ]
   );
 
   // SEÇENEK 2: 6 Yönlü Cubemap Yüzü Yükleme (Ön, Arka, Sağ, Sol, Üst, Alt)
   const handleCubemapFaceFile = (faceKey: keyof CubemapFaces, file: File) => {
+    if (!selectedPropertyId) {
+      setStatusBanner({
+        type: "error",
+        text: "Cubemap görselleri eklemek için önce 'İlan Seç' alanından hedef ilanı seçin.",
+      });
+      return;
+    }
+
     if (!file.type.startsWith("image/")) return;
     const localUrl = URL.createObjectURL(file);
 
@@ -433,29 +471,16 @@ export default function TourBuilderPage() {
     );
   };
 
-  // Örnek 6 Yönlü Cubemap Yükle (Hızlı Test)
-  const handleLoadSampleCubemap = () => {
-    setCaptureOption("cubemap");
-    setCubemapFaces(SAMPLE_CUBEMAP_FACES);
-    setRooms((prev) =>
-      prev.map((r) =>
-        r.id === activeRoom.id
-          ? {
-              ...r,
-              captureMode: "cubemap",
-              cubemapFaces: SAMPLE_CUBEMAP_FACES,
-            }
-          : r
-      )
-    );
-    setStatusBanner({
-      type: "info",
-      text: "6 yönlü örnek Cubemap kareleri Three.js CubeTextureLoader ile sanal odaya yüklendi.",
-    });
-  };
-
   // 6 Cubemap Yüzünü Tek Kaydedilebilir Panoramaya Dönüştürüp Cloudinary + Prisma'ya Kaydet
   const handleConvertAndSaveCubemap = async () => {
+    if (!selectedPropertyId) {
+      setStatusBanner({
+        type: "error",
+        text: "Kaydetme için önce 'İlan Seç' menüsünden aktif bir ilan seçmelisiniz.",
+      });
+      return;
+    }
+
     const missing = CUBEMAP_FACE_DEFS.filter((f) => !cubemapFaces[f.key]);
     if (missing.length > 0) {
       setStatusBanner({
@@ -490,16 +515,22 @@ export default function TourBuilderPage() {
       const uploaded = await uploadFileToMediaApi(
         jpegBlob,
         `cubemap-${activeRoom.roomLabel.toLowerCase()}-${Date.now()}.jpg`,
-        activeRoom.roomLabel
+        activeRoom.roomLabel,
+        selectedPropertyId,
+        activeRoom.sortOrder
       );
 
-      // 3. Prisma Media tablosuna PANORAMA_360 kaydı
-      const prismaMedia = await savePanoramaMediaRecord({
-        propertyId: selectedPropertyId,
-        url: uploaded.url,
-        roomLabel: activeRoom.roomLabel,
-        sortOrder: activeRoom.sortOrder,
-      });
+      // 3. Eğer /api/upload DB id dönmediyse server action üzerinden connect ile bağla
+      const prismaMediaStorage = uploaded.id
+        ? "prisma"
+        : (
+            await savePanoramaMediaRecord({
+              propertyId: selectedPropertyId,
+              url: uploaded.url,
+              roomLabel: activeRoom.roomLabel,
+              sortOrder: activeRoom.sortOrder,
+            })
+          ).storage;
 
       const nextRooms = rooms.map((r) =>
         r.id === activeRoom.id
@@ -520,7 +551,7 @@ export default function TourBuilderPage() {
         type: "success",
         text: `✨ 6 yönlü Cubemap sanal odaya dönüştürüldü, ${
           uploaded.storage === "cloudinary" ? "Cloudinary CDN'e" : "sunucuya"
-        } yüklendi ve Prisma PANORAMA_360 (${prismaMedia.storage}) veritabanına bağlandı!`,
+        } yüklendi ve Prisma PANORAMA_360 (${prismaMediaStorage}) ile seçili ilana bağlandı!`,
       });
     } catch (err) {
       setStatusBanner({
@@ -622,8 +653,7 @@ export default function TourBuilderPage() {
       roomLabel: newRoomLabel,
       customTitle: newRoomTitle.trim() || `${newRoomLabel} Alanı`,
       captureMode: captureOption,
-      panoramaUrl:
-        "https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-1.jpg",
+      panoramaUrl: "",
       sortOrder: rooms.length,
       hotspots: [],
       links: [],
@@ -636,12 +666,28 @@ export default function TourBuilderPage() {
 
   // Tüm Sanal Turu & X, Y, Z Hotspot Verilerini Prisma'ya Kaydet
   const handleSaveEntireTour = async () => {
+    if (!selectedPropertyId) {
+      setStatusBanner({
+        type: "error",
+        text: "Kaydetme için önce 'İlan Seç' açılır menüsünden bir ilan seçmelisiniz.",
+      });
+      return;
+    }
+
     setIsSavingTour(true);
     try {
       const res = await saveFullVirtualTour(selectedPropertyId, rooms);
       setStatusBanner({
         type: "success",
         text: `💾 ${res.savedRooms} oda, PANORAMA_360 medya kayıtları ve tüm (X, Y, Z) Hotspot verileri veritabanına (${res.storage}) kaydedildi!`,
+      });
+    } catch (err) {
+      setStatusBanner({
+        type: "error",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Sanal tur veritabanına kaydedilirken hata oluştu.",
       });
     } finally {
       setIsSavingTour(false);
@@ -674,36 +720,22 @@ export default function TourBuilderPage() {
           </p>
         </div>
 
-        {/* Property Selector & Save Button */}
+        {/* Save Button & Active Property Summary */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 rounded-xl border border-gold-500/30 bg-card px-3 py-2 text-xs">
-            <Building2 className="h-4 w-4 text-gold-400 shrink-0" />
-            <span className="text-muted-foreground">Hedef İlan:</span>
-            <select
-              value={selectedPropertyId}
-              onChange={(e) => setSelectedPropertyId(e.target.value)}
-              className="bg-transparent font-semibold text-foreground outline-none cursor-pointer max-w-[200px]"
-            >
-              {(properties.length > 0
-                ? properties
-                : [
-                    { id: "prop-1", title: "The Bosphorus Waterfront Palace" },
-                    { id: "prop-2", title: "Villa Belle Époque Cap d'Antibes" },
-                    { id: "prop-3", title: "Sky Penthouse at Palm Jumeirah" },
-                    { id: "prop-4", title: "Yalıkavak Cliffside Private Estate" },
-                  ]
-              ).map((p) => (
-                <option key={p.id} value={p.id} className="bg-card text-foreground">
-                  {p.title}
-                </option>
-              ))}
-            </select>
-          </div>
+          {selectedPropertyId ? (
+            <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-400 text-[11px] py-1.5 px-3">
+              Bağlı İlan ID: {selectedPropertyId.slice(0, 10)}...
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-300 text-[11px] py-1.5 px-3">
+              İlan Seçilmedi
+            </Badge>
+          )}
 
           <Button
             variant="gold"
             size="sm"
-            disabled={isSavingTour}
+            disabled={isSavingTour || !selectedPropertyId}
             onClick={handleSaveEntireTour}
             className="gap-2"
           >
@@ -784,9 +816,75 @@ export default function TourBuilderPage() {
       </div>
 
       {/* =========================================================================
-          1. İKİ SEÇENEKLİ ÇEKİM & YÜKLEME PANELİ
+          1. ZORUNLU İLAN SEÇİMİ & İKİ SEÇENEKLİ ÇEKİM / YÜKLEME PANELİ
           ========================================================================= */}
       <div className="rounded-2xl border border-gold-500/30 bg-card/70 p-5 sm:p-6 backdrop-blur-2xl space-y-5">
+        {/* Mandatory Property Selector at the top of the 360 upload form */}
+        <div className="rounded-xl border border-gold-500/40 bg-background/80 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <label
+              htmlFor="tour-builder-property-select"
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gold-400"
+            >
+              <Building2 className="h-4 w-4 text-gold-400 shrink-0" />
+              <span>İlan Seç (Zorunlu)</span>
+              <span className="text-red-400">*</span>
+            </label>
+            {isLoadingProperties ? (
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-gold-400" />
+                Ajans ilanları veritabanından çekiliyor...
+              </span>
+            ) : (
+              <span className="text-[11px] text-muted-foreground">
+                Ajansa ait <strong className="text-foreground">{properties.length}</strong> aktif ilan bulundu
+              </span>
+            )}
+          </div>
+
+          <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center gap-3">
+            <select
+              id="tour-builder-property-select"
+              required
+              disabled={isLoadingProperties || properties.length === 0}
+              value={selectedPropertyId}
+              onChange={(e) => setSelectedPropertyId(e.target.value)}
+              className="w-full rounded-xl border border-gold-500/30 bg-card px-3.5 py-2.5 text-sm font-semibold text-foreground outline-none transition-colors focus:border-gold-400 cursor-pointer disabled:opacity-60"
+            >
+              <option value="">
+                {isLoadingProperties
+                  ? "İlanlar yükleniyor..."
+                  : properties.length === 0
+                  ? "Ajansa kayıtlı aktif ilan bulunamadı"
+                  : "— Lütfen 360° tur eklenecek ilanı seçiniz —"}
+              </option>
+              {properties.map((p) => (
+                <option key={p.id} value={p.id} className="bg-card text-foreground">
+                  {p.title} ({p.district ? `${p.district}, ` : ""}{p.city}) — {p.currency} {Number(p.price).toLocaleString("tr-TR")}
+                </option>
+              ))}
+            </select>
+
+            {isLoadingTour && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-gold-400 shrink-0">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Tur yükleniyor...
+              </span>
+            )}
+          </div>
+
+          {!selectedPropertyId && !isLoadingProperties && (
+            <p className="mt-2 text-[11px] text-amber-300/90 flex items-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <span>
+                {properties.length === 0
+                  ? "Önce Portföy Yönetimi sayfasından ajansınıza ait bir ilan eklemelisiniz."
+                  : "360° fotoğraf veya Cubemap yükleme işlemi yalnızca seçilen ilanın ID'si ile kilitli olarak yapılabilir."}
+              </span>
+            </p>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Seçenek 1: 360 Kamera Görüntüsü Yükle */}
           <button
@@ -870,17 +968,26 @@ export default function TourBuilderPage() {
           <div
             onDragOver={(e) => {
               e.preventDefault();
-              setIsDragging360(true);
+              if (selectedPropertyId) setIsDragging360(true);
             }}
             onDragLeave={() => setIsDragging360(false)}
             onDrop={(e) => {
               e.preventDefault();
               setIsDragging360(false);
+              if (!selectedPropertyId) {
+                setStatusBanner({
+                  type: "error",
+                  text: "Önce yukarıdaki 'İlan Seç (Zorunlu)' alanından bir ilan seçmelisiniz.",
+                });
+                return;
+              }
               const file = e.dataTransfer.files?.[0];
               if (file) handleEquirectangularFile(file);
             }}
             className={`rounded-2xl border-2 border-dashed p-6 sm:p-8 text-center transition-all ${
-              isDragging360
+              !selectedPropertyId
+                ? "border-border/50 bg-background/30 opacity-60"
+                : isDragging360
                 ? "border-gold-400 bg-gold-500/10"
                 : "border-gold-500/30 bg-background/50 hover:border-gold-500/60"
             }`}
@@ -889,7 +996,7 @@ export default function TourBuilderPage() {
               <div className="flex flex-col items-center py-4">
                 <Loader2 className="h-10 w-10 text-gold-400 animate-spin" />
                 <p className="mt-3 text-sm font-semibold text-gold-300">
-                  Cloudinary&apos;e yükleniyor ve Prisma PANORAMA_360 kaydı oluşturuluyor...
+                  Cloudinary&apos;e yükleniyor ve Prisma PANORAMA_360 kaydı seçili ilana bağlanıyor...
                 </p>
               </div>
             ) : (
@@ -899,7 +1006,7 @@ export default function TourBuilderPage() {
                   2:1 Oranlı 360° Küresel Fotoğrafı Buraya Sürükleyin ({activeRoom.roomLabel})
                 </h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Ricoh Theta, Insta360 veya GoPro MAX panoramalar otomatik doğrulanır ve Cloudinary CDN + Prisma Media tablosuna işlenir.
+                  Ricoh Theta, Insta360 veya GoPro MAX panoramalar otomatik doğrulanır ve seçili <code className="text-gold-400">propertyId</code> ile Prisma Media tablosuna işlenir.
                 </p>
 
                 {aspectCheckInfo && (
@@ -915,16 +1022,28 @@ export default function TourBuilderPage() {
                 )}
 
                 <div className="mt-4">
-                  <label className="inline-flex items-center gap-2 rounded-xl border border-gold-500 bg-gold-gradient px-5 py-2.5 text-xs font-bold text-black shadow-gold-sm cursor-pointer hover:brightness-110">
+                  <label
+                    className={`inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 text-xs font-bold transition-all ${
+                      selectedPropertyId
+                        ? "border-gold-500 bg-gold-gradient text-black shadow-gold-sm cursor-pointer hover:brightness-110"
+                        : "border-border bg-muted text-muted-foreground cursor-not-allowed"
+                    }`}
+                  >
                     <Upload className="h-4 w-4" />
-                    <span>360° Fotoğraf Seç &amp; Cloudinary&apos;e Yükle</span>
+                    <span>
+                      {selectedPropertyId
+                        ? "360° Fotoğraf Seç & İlana Bağla"
+                        : "Yüklemek İçin Önce İlan Seçin"}
+                    </span>
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={!selectedPropertyId}
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleEquirectangularFile(file);
+                        e.target.value = "";
                       }}
                     />
                   </label>
@@ -943,19 +1062,12 @@ export default function TourBuilderPage() {
               <div className="text-xs text-muted-foreground">
                 <strong className="text-sky-400">6 Yönlü Sabit Çekim ({completedFacesCount}/6 Yüklü):</strong>{" "}
                 Ön, Arka, Sağ, Sol, Üst ve Alt karelerini bırakın; Three.js{" "}
-                <code className="text-sky-300">CubeTextureLoader</code> sahneyi anında sanal odaya çevirir.
+                <code className="text-sky-300">CubeTextureLoader</code> sahneyi seçili ilana özel sanal odaya çevirir.
               </div>
-              <button
-                type="button"
-                onClick={handleLoadSampleCubemap}
-                className="shrink-0 rounded-lg border border-sky-500/40 bg-sky-500/15 px-3 py-1.5 text-xs font-semibold text-sky-300 hover:bg-sky-500/25 transition-all"
-              >
-                Örnek 6 Kare Yükle
-              </button>
             </div>
 
             {/* 6 Separate Drag-and-Drop Dropzones */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 ${!selectedPropertyId ? "opacity-55 pointer-events-none" : ""}`}>
               {CUBEMAP_FACE_DEFS.map((faceDef) => (
                 <CubemapDropzoneCard
                   key={faceDef.key}
@@ -1001,7 +1113,11 @@ export default function TourBuilderPage() {
               <Button
                 type="button"
                 variant="gold"
-                disabled={isConvertingCubemap || completedFacesCount < 6}
+                disabled={
+                  !selectedPropertyId ||
+                  isConvertingCubemap ||
+                  completedFacesCount < 6
+                }
                 onClick={handleConvertAndSaveCubemap}
                 className="gap-2"
               >

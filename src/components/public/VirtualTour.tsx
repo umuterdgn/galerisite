@@ -68,265 +68,14 @@ export interface VirtualTourProps {
   className?: string;
 }
 
-// Ultra-Luxury Default 360° Panorama Rooms
-const DEFAULT_LUXURY_ROOMS: VirtualTourRoom[] = [
-  {
-    id: "giris",
-    name: "Giriş & Galeri Holü",
-    caption: "Biyometrik Kapı & Mermer Karşılama Holü",
-    panorama: "https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-1.jpg",
-    thumbnail: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80",
-    links: [
-      {
-        nodeId: "koridor",
-        yaw: 0.1,
-        pitch: -0.15,
-        name: "Koridor & Sanat Galerisine Geçiş",
-      },
-    ],
-    hotspots: [
-      {
-        id: "giris-kapi",
-        yaw: -1.3,
-        pitch: 0.05,
-        category: "GÜVENLİK & ERİŞİM",
-        title: "Biyometrik Akıllı Giriş Kapısı",
-        description:
-          "Apple HomeKey, 3D yüz tanıma ve parmak izi okuyuculu motorize çelik zırhlı kapı sistemi.",
-        spec: "Knox Güvenlik / 14 Kilit Noktası",
-        iconType: "security",
-      },
-      {
-        id: "giris-vestiyer",
-        yaw: 1.45,
-        pitch: -0.12,
-        category: "ÖZEL MOBİLYA",
-        title: "İtalyan Meşe Gizli Vestiyer",
-        description:
-          "Gizli LED ambiyans aydınlatmalı, havalandırma kanallı ve nubuk deri kaplamalı özel tasarım portmanto.",
-        spec: "Masif Fırçalanmış Meşe",
-        iconType: "wardrobe",
-      },
-    ],
-  },
-  {
-    id: "koridor",
-    name: "Koridor & Sanat Galerisi",
-    caption: "Merkezi Dağılım & Işık Hattı",
-    panorama: "https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-2.jpg",
-    thumbnail: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=400&q=80",
-    links: [
-      {
-        nodeId: "giris",
-        yaw: 3.14,
-        pitch: -0.15,
-        name: "Giriş Holüne Dönüş",
-      },
-      {
-        nodeId: "mutfak",
-        yaw: -0.85,
-        pitch: -0.15,
-        name: "Gourmet Şef Mutfağına Geçiş",
-      },
-      {
-        nodeId: "salon",
-        yaw: 0.75,
-        pitch: -0.15,
-        name: "Ana Salon & Boğaz Cephesine Geçiş",
-      },
-    ],
-    hotspots: [
-      {
-        id: "koridor-yerdenisitma",
-        yaw: 0.0,
-        pitch: -0.58,
-        category: "PREMIUM İKLİMLENDİRME",
-        title: "Yerden Isıtma Sistemi (Rehau)",
-        description:
-          "Tüm odalarda bağımsız programlanabilir dijital termostatlar ve Alman Rehau oksijen bariyerli akıllı tesisat.",
-        spec: "A+++ Enerji / KNX Otomasyon",
-        iconType: "heating",
-      },
-      {
-        id: "koridor-aydinlatma",
-        yaw: -0.2,
-        pitch: 0.38,
-        category: "MİMARİ AYDINLATMA",
-        title: "Flos Manyetik Ray Spot Hattı",
-        description:
-          "DALI-2 protokolü ile günün saatine göre sirkadiyen ritimle renk sıcaklığı değiştiren gömme lineer aydınlatma.",
-        spec: "CRI 98+ / 2700K - 4000K",
-        iconType: "light",
-      },
-    ],
-  },
-  {
-    id: "mutfak",
-    name: "Gourmet Şef Mutfağı",
-    caption: "Calacatta Ada Tezgah & Gaggenau Serisi",
-    panorama: "https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-3.jpg",
-    thumbnail: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=400&q=80",
-    links: [
-      {
-        nodeId: "koridor",
-        yaw: 2.2,
-        pitch: -0.15,
-        name: "Koridor Hattına Dönüş",
-      },
-      {
-        nodeId: "salon",
-        yaw: -1.2,
-        pitch: -0.15,
-        name: "Ana Salona Doğrudan Geçiş",
-      },
-    ],
-    hotspots: [
-      {
-        id: "mutfak-ankastre",
-        yaw: 0.42,
-        pitch: -0.08,
-        category: "ANKASTRE & TEKNOLOJİ",
-        title: "Siemens StudioLine Ankastre Set",
-        description:
-          "FullTouch TFT Dokunmatik ekran, Home Connect yapay zekâ kameralı fırın, vakum çekmecesi ve entegre davlumbazlı ocak.",
-        spec: "Siemens StudioLine Black Steel",
-        iconType: "kitchen",
-      },
-      {
-        id: "mutfak-ada",
-        yaw: -0.45,
-        pitch: -0.32,
-        category: "DOĞAL TAŞ & MERMER",
-        title: "Calacatta Gold Yekpare Ada Tezgah",
-        description:
-          "İtalya Carrara bölgesinden özel seçilmiş 3.4 metre yekpare bookmatch mermer blok ve gizli entegre kablosuz şarj ünitesi.",
-        spec: "İtalyan Carrara / Bookmatch",
-        iconType: "kitchen",
-      },
-      {
-        id: "mutfak-sarap",
-        yaw: 1.15,
-        pitch: -0.05,
-        category: "ŞARAP KAV KONSOLU",
-        title: "Liebherr İklimlendirmeli Şarap Dolabı",
-        description:
-          "İki bağımsız sıcaklık bölgesi, UV korumalı cam kapak ve titreşimsiz kompresör teknolojisine sahip 64 şişelik kav.",
-        spec: "+5°C ile +20°C Çift Bölge",
-        iconType: "kitchen",
-      },
-    ],
-  },
-  {
-    id: "salon",
-    name: "Ana Salon & Boğaz Cephesi",
-    caption: "Boğaz Manzaralı 120 m² Prestij Yaşam Alanı",
-    panorama: "https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-4.jpg",
-    thumbnail: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=400&q=80",
-    links: [
-      {
-        nodeId: "koridor",
-        yaw: -2.8,
-        pitch: -0.15,
-        name: "Koridor & Giriş Hattına Dönüş",
-      },
-      {
-        nodeId: "mutfak",
-        yaw: 1.75,
-        pitch: -0.15,
-        name: "Gourmet Mutfağa Geçiş",
-      },
-      {
-        nodeId: "kat1",
-        yaw: -1.25,
-        pitch: 0.12,
-        name: "1. Kat & Master Süit Merdivenleri",
-      },
-    ],
-    hotspots: [
-      {
-        id: "salon-somine",
-        yaw: 0.12,
-        pitch: -0.22,
-        category: "MİMARİ DETAY",
-        title: "Planika Akıllı Bioetanol Şömine",
-        description:
-          "Uzaktan kumandalı, otomatik dolum sistemli, bacasız, gerçek alevli ve CO2 emniyet sensörlü 2 metre lineer şömine.",
-        spec: "BEV Teknolojisi / Sıfır Duman",
-        iconType: "fireplace",
-      },
-      {
-        id: "salon-ses",
-        yaw: -0.85,
-        pitch: 0.28,
-        category: "AKUSTİK & SES SİSTEMİ",
-        title: "Bang & Olufsen Mimari Hoparlörler",
-        description:
-          "Tavana ve duvar panellerine sıfır gömülü BeoLab mimari akustik transdüserler ve çok bölgeli ses mimarisi.",
-        spec: "Dolby Atmos / 7.2.4 Kanal",
-        iconType: "sound",
-      },
-      {
-        id: "salon-camlar",
-        yaw: 1.25,
-        pitch: 0.02,
-        category: "CEPHE MİMARİSİ",
-        title: "Schüco Motorize Sürgülü Cephe",
-        description:
-          "Zeminle hemzemin sıfır eşikli motorize kayar cam paneller, solar reflektif akustik lamine cam yalıtımı.",
-        spec: "Schüco Panorama Design / Akustik 44dB",
-        iconType: "sun",
-      },
-    ],
-  },
-  {
-    id: "kat1",
-    name: "1. Kat & Master Süit",
-    caption: "Boğaz Manzaralı Özel Teras & Ebeveyn Süiti",
-    panorama: "https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-1.jpg",
-    thumbnail: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=400&q=80",
-    links: [
-      {
-        nodeId: "salon",
-        yaw: 3.05,
-        pitch: -0.2,
-        name: "Ana Salona (Zemin Kata) İniş",
-      },
-    ],
-    hotspots: [
-      {
-        id: "kat1-banyo",
-        yaw: 0.85,
-        pitch: -0.12,
-        category: "BANYO MİMARİSİ",
-        title: "Dornbracht 24K Altın Kaplama Bataryalar",
-        description:
-          "Fırçalanmış 24 ayar saf altın kaplama özel serisi, akıllı dijital su kontrolü ve tavan içi yağmur duşu.",
-        spec: "Dornbracht Tara Gold Edition",
-        iconType: "bath",
-      },
-      {
-        id: "kat1-giyinme",
-        yaw: -1.25,
-        pitch: -0.06,
-        category: "GİYİNME ODASI",
-        title: "Poliform İtalyan Giyinme Odası",
-        description:
-          "Füme cam kapaklar, hakiki nubuk deri detaylı takı ve saat çekmeceleri ve entegre iç sıcak aydınlatma.",
-        spec: "Poliform Senzafine Serisi",
-        iconType: "wardrobe",
-      },
-    ],
-  },
-];
-
 export function VirtualTour({
-  propertyTitle = "The Bosphorus Waterfront Palace",
+  propertyTitle = "Seçili İlan",
   media = [],
   initialRoomId = "giris",
   customRooms,
   className = "",
 }: VirtualTourProps) {
-  // If Prisma Media contains PANORAMA_360 items, combine or map them
+  // If Prisma Media contains PANORAMA_360 items, combine or map them strictly per property
   const mediaRef = useRef(media);
   mediaRef.current = media;
   const customRoomsRef = useRef(customRooms);
@@ -335,6 +84,7 @@ export function VirtualTour({
   const roomsKey = React.useMemo(() => {
     if (customRooms && customRooms.length > 0) {
       return customRooms
+        .filter((r) => Boolean(r.panorama))
         .map(
           (r) =>
             `${r.id}:${r.name}:${typeof r.panorama === "string" ? r.panorama : "cube"}:${(r.links || []).length}:${(r.hotspots || []).length}`
@@ -342,23 +92,24 @@ export function VirtualTour({
         .join("|");
     }
     return media
-      .filter((m) => m.type === "PANORAMA_360")
+      .filter((m) => m.type === "PANORAMA_360" && Boolean(m.url))
       .map((m) => `${m.id}:${m.url}:${m.roomLabel || ""}`)
       .join("|");
   }, [media, customRooms]);
 
-  // Build room list dynamically from customRooms prop or Prisma media if available
+  // Build room list strictly from customRooms prop or Prisma PANORAMA_360 media (no mock fallback)
   const rooms = React.useMemo(() => {
-    if (!roomsKey) return DEFAULT_LUXURY_ROOMS;
+    if (!roomsKey) return [];
 
     const latestCustomRooms = customRoomsRef.current;
     if (latestCustomRooms && latestCustomRooms.length > 0) {
-      return latestCustomRooms;
+      return latestCustomRooms.filter((r) => Boolean(r.panorama));
     }
 
-    const panoramaMedia = mediaRef.current.filter((m) => m.type === "PANORAMA_360");
+    const panoramaMedia = mediaRef.current.filter(
+      (m) => m.type === "PANORAMA_360" && Boolean(m.url)
+    );
     if (panoramaMedia.length > 0) {
-      // Map Prisma media items into rooms
       return panoramaMedia.map((m, index) => {
         const nextMedia = panoramaMedia[(index + 1) % panoramaMedia.length];
         const prevMedia =
@@ -388,17 +139,30 @@ export function VirtualTour({
                 ]
               : []),
           ],
-          hotspots: DEFAULT_LUXURY_ROOMS[0].hotspots,
+          hotspots: [],
         };
       });
     }
 
-    return DEFAULT_LUXURY_ROOMS;
+    return [];
   }, [roomsKey, propertyTitle]);
 
   const [currentRoomId, setCurrentRoomId] = useState<string>(
-    rooms.some((r) => r.id === initialRoomId) ? initialRoomId : rooms[0]?.id || "giris"
+    rooms.some((r) => r.id === initialRoomId) ? initialRoomId : rooms[0]?.id || ""
   );
+
+  // Sync currentRoomId if the resolved room list changes
+  useEffect(() => {
+    if (rooms.length === 0) {
+      if (currentRoomId !== "") setCurrentRoomId("");
+      return;
+    }
+    if (!rooms.some((r) => r.id === currentRoomId)) {
+      setCurrentRoomId(
+        rooms.some((r) => r.id === initialRoomId) ? initialRoomId : rooms[0].id
+      );
+    }
+  }, [rooms, currentRoomId, initialRoomId]);
   const [selectedHotspot, setSelectedHotspot] = useState<VirtualTourHotspot | null>(null);
   const [isAutoRotating, setIsAutoRotating] = useState(false);
   const [isGyroscopeActive, setIsGyroscopeActive] = useState(false);
@@ -461,7 +225,7 @@ export function VirtualTour({
 
   // Initialize Photo Sphere Viewer
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || rooms.length === 0) return;
 
     let viewer: Viewer | null = null;
     let isSubscribed = true;
@@ -675,6 +439,24 @@ export function VirtualTour({
     markersRef.current.toggleAllMarkers();
     setAreHotspotsVisible(!areHotspotsVisible);
   };
+
+  if (rooms.length === 0 || !currentRoom) {
+    return (
+      <div
+        className={`flex h-[420px] sm:h-[520px] w-full flex-col items-center justify-center rounded-2xl sm:rounded-3xl border border-gold-500/25 bg-[#06070a] px-6 text-center shadow-[0_20px_50px_rgba(0,0,0,0.8)] ${className}`}
+      >
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-gold-500/30 bg-gold-500/10 text-gold-400">
+          <Compass className="h-7 w-7 opacity-80" />
+        </div>
+        <h4 className="mt-4 font-serif text-lg sm:text-xl font-bold text-white">
+          Bu İlan İçin Henüz 360° Sanal Tur Eklenmemiş
+        </h4>
+        <p className="mt-2 max-w-md text-xs sm:text-sm text-zinc-400 leading-relaxed">
+          <strong className="text-gold-300">{propertyTitle}</strong> portföyüne ait 360° panoramik görseller admin panelindeki Tour Builder üzerinden yüklendiğinde burada interaktif olarak görüntülenecektir.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

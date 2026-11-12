@@ -9,7 +9,7 @@
     "offMarket": "Off-Market",
     "geo": "GEO Destinations",
     "integration": "Agency Integration",
-    "b2bPortal": "B2B Portal"
+    "b2bPortal": "Login"
   },
   "Hero": {
     "badge": "Next-Gen Multi-Tenant B2B Real Estate Ecosystem",
@@ -17,7 +17,7 @@
     "titleHighlight": "Experience",
     "subtitle": "AI-powered virtual staging, global GEO syndication, and exclusive confidential portfolio management curated for elite brokerage agencies.",
     "ctaPrimary": "Explore Private Portfolio",
-    "ctaSecondary": "B2B Agency Portal",
+    "ctaSecondary": "Login",
     "searchAllCities": "All GEO Destinations",
     "searchAllTypes": "All Property Types",
     "searchMansion": "Mansion & Palace",

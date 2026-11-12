@@ -97,7 +97,17 @@ function buildVirtualTourRooms(
   savedRooms: SavedTourRoomPayload[],
   mediaItems: DetailMediaItem[]
 ): VirtualTourRoom[] {
-  const validSaved = savedRooms.filter((r) => Boolean(r.panoramaUrl));
+  const panoramaMedia = mediaItems.filter(
+    (m) => m.type === MediaType.PANORAMA_360 && Boolean(m.url)
+  );
+  if (panoramaMedia.length === 0) {
+    return [];
+  }
+
+  const allowedPanoramaUrls = new Set(panoramaMedia.map((m) => m.url));
+  const validSaved = savedRooms.filter(
+    (r) => Boolean(r.panoramaUrl) && allowedPanoramaUrls.has(r.panoramaUrl)
+  );
   const validRoomIds = new Set(validSaved.map((r) => r.id));
 
   const mapped: VirtualTourRoom[] = validSaved.map((room) => ({
@@ -129,9 +139,6 @@ function buildVirtualTourRooms(
   }));
 
   const existingUrls = new Set(mapped.map((r) => r.panorama));
-  const panoramaMedia = mediaItems.filter(
-    (m) => m.type === MediaType.PANORAMA_360 && Boolean(m.url)
-  );
 
   panoramaMedia.forEach((m, index) => {
     if (!existingUrls.has(m.url)) {
@@ -241,19 +248,40 @@ async function resolvePropertyDetail(id: string): Promise<DetailProperty> {
     const dbProperty = await prisma.property.findUnique({
       where: { id },
       include: {
-        media: { orderBy: { sortOrder: "asc" } },
+        media: {
+          where: { type: MediaType.PANORAMA_360 },
+          orderBy: { sortOrder: "asc" },
+        },
         agency: true,
       },
     });
 
     if (dbProperty) {
-      const dbMedia: DetailMediaItem[] = dbProperty.media.map((m) => ({
+      const otherMediaRows = await prisma.media.findMany({
+        where: {
+          propertyId: id,
+          type: { not: MediaType.PANORAMA_360 },
+        },
+        orderBy: { sortOrder: "asc" },
+      });
+
+      const panoramaMedia: DetailMediaItem[] = dbProperty.media.map((m) => ({
         id: m.id,
         url: m.url,
         type: m.type,
         roomLabel: m.roomLabel,
         isStaged: m.isStaged,
       }));
+
+      const otherMedia: DetailMediaItem[] = otherMediaRows.map((m) => ({
+        id: m.id,
+        url: m.url,
+        type: m.type,
+        roomLabel: m.roomLabel,
+        isStaged: m.isStaged,
+      }));
+
+      const dbMedia: DetailMediaItem[] = [...panoramaMedia, ...otherMedia];
 
       let savedRooms: SavedTourRoomPayload[] = [];
       if (
