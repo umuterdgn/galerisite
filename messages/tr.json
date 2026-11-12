@@ -1,0 +1,55 @@
+{
+  "Nav": {
+    "brand": "LUMIÈRE",
+    "brandSubtitle": "ESTATES",
+    "portfolio": "Özel Portföy",
+    "offMarket": "Off-Market",
+    "geo": "GEO Lokasyonlar",
+    "integration": "Ajans Entegrasyonu",
+    "b2bPortal": "B2B Portal"
+  },
+  "Hero": {
+    "badge": "Yeni Nesil Multi-Tenant B2B Emlak Ekosistemi",
+    "title": "Geleceğin Gayrimenkul",
+    "titleHighlight": "Deneyimi",
+    "subtitle": "Yapay zeka destekli sanal sahneleme (AI Virtual Staging), küresel GEO hedefleme ve akredite emlak ajansları için tasarlanmış ayrıcalıklı portföy yönetim platformu.",
+    "ctaPrimary": "Özel Portföyü İnceleyin",
+    "ctaSecondary": "B2B Ajans Portalı",
+    "searchAllCities": "Tüm GEO Destinasyonlar",
+    "searchAllTypes": "Tüm Mülkler",
+    "searchMansion": "Yalı & Malikâne",
+    "searchVilla": "Lüks Villa",
+    "searchPenthouse": "Sky Penthouse",
+    "searchButton": "Filtrele",
+    "statPortfolio": "Yönetilen Portföy",
+    "statAgencies": "Doğrulanmış Ajanslar",
+    "statMedia": "360° & Drone Turları",
+    "statConcierge": "VIP Konsiyerj"
+  },
+  "Property": {
+    "sectionBadge": "Ayrıcalıklı Koleksiyon",
+    "sectionTitle": "Seçkin Küresel Portföy",
+    "sectionDesc": "Her biri titizlikle akredite edilmiş, tescilli Boğaz yalılarından Akdeniz sahillerine uzanan nadide mülkler.",
+    "exclusive": "Ayrıcalıklı Portföy",
+    "aiStaged": "AI Sahnelenmiş",
+    "beds": "Yatak",
+    "baths": "Banyo",
+    "area": "m²",
+    "priceLabel": "Fiyat",
+    "viewDetails": "İlan Detayı"
+  },
+  "Capabilities": {
+    "sectionBadge": "Teknoloji & Mahremiyet",
+    "sectionTitle": "Lüks Emlak İçin Gelişmiş B2B Altyapısı",
+    "stagingTitle": "AI Virtual Staging",
+    "stagingDesc": "Boş veya yenilenmesi gereken mülkleri yapay zeka ile lüks mobilya ve ışıklandırma seçenekleriyle donatarak sanal turlar üretin.",
+    "offMarketTitle": "Gizli (Off-Market) Dağıtım",
+    "offMarketDesc": "Yalnızca akredite brokerlar ve aile ofisleri (Family Office) için gizlilik sözleşmeli kapalı portföy erişimi.",
+    "multiTenantTitle": "Multi-Tenant Ajans Mimarisi",
+    "multiTenantDesc": "Her ajans kendi alt alan adı (subdomain), kurumsal logosu ve özelleştirilmiş renk teması ile bağımsız olarak hizmet verir."
+  },
+  "Footer": {
+    "tagline": "Next-Gen Multi-Tenant B2B SaaS Platform",
+    "rights": "Tüm hakları saklıdır."
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "Nav": {
+    "brand": "LUMIÈRE",
+    "brandSubtitle": "ESTATES",
+    "portfolio": "Private Portfolio",
+    "offMarket": "Off-Market",
+    "geo": "GEO Destinations",
+    "integration": "Agency Integration",
+    "b2bPortal": "B2B Portal"
+  },
+  "Hero": {
+    "badge": "Next-Gen Multi-Tenant B2B Real Estate Ecosystem",
+    "title": "The Future of Real Estate",
+    "titleHighlight": "Experience",
+    "subtitle": "AI-powered virtual staging, global GEO syndication, and exclusive confidential portfolio management curated for elite brokerage agencies.",
+    "ctaPrimary": "Explore Private Portfolio",
+    "ctaSecondary": "B2B Agency Portal",
+    "searchAllCities": "All GEO Destinations",
+    "searchAllTypes": "All Property Types",
+    "searchMansion": "Mansion & Palace",
+    "searchVilla": "Luxury Villa",
+    "searchPenthouse": "Sky Penthouse",
+    "searchButton": "Search",
+    "statPortfolio": "Portfolio Under Management",
+    "statAgencies": "Verified Agencies",
+    "statMedia": "360° & Drone Tours",
+    "statConcierge": "VIP Concierge"
+  },
+  "Property": {
+    "sectionBadge": "Exclusive Collection",
+    "sectionTitle": "Curated Global Portfolio",
+    "sectionDesc": "Meticulously vetted architectural masterpieces spanning historical Bosphorus palaces to sun-drenched Mediterranean coastlines.",
+    "exclusive": "Exclusive Portfolio",
+    "aiStaged": "AI Virtual Staged",
+    "beds": "Beds",
+    "baths": "Baths",
+    "area": "sqm",
+    "priceLabel": "Price",
+    "viewDetails": "View Property"
+  },
+  "Capabilities": {
+    "sectionBadge": "Technology & Discretion",
+    "sectionTitle": "Advanced B2B Infrastructure for Ultra-Luxury Real Estate",
+    "stagingTitle": "AI Virtual Staging",
+    "stagingDesc": "Transform vacant or development properties with artificial intelligence, curating bespoke luxury interiors and panoramic virtual tours.",
+    "offMarketTitle": "Off-Market Confidential Syndication",
+    "offMarketDesc": "Discreet, NDA-protected private listings accessible solely to accredited brokerages and sovereign wealth family offices.",
+    "multiTenantTitle": "Multi-Tenant Agency Architecture",
+    "multiTenantDesc": "Empower each brokerage agency with custom subdomains, distinct corporate branding, and tailored luxury color themes."
+  },
+  "Footer": {
+    "tagline": "Next-Gen Multi-Tenant B2B SaaS Platform",
+    "rights": "All rights reserved."
+  }
+}

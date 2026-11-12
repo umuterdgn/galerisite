@@ -1,0 +1,174 @@
+// Prisma schema for Luxury Real Estate Multi-tenant B2B SaaS Platform
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+enum Role {
+  SUPERADMIN
+  AGENCY_OWNER
+  AGENT
+}
+
+enum PropertyStatus {
+  FOR_SALE
+  FOR_RENT
+  SOLD
+  RENTED
+  OFF_MARKET
+  DRAFT
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  PANORAMA_360
+  BIM_3D
+  DRONE
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+// 1. Agency (Ajanslar - Multi-Tenant Modeli)
+model Agency {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique // Alt alan adı / subdomain için örn: "bodrum-luxury.emlaksaas.com"
+  logoUrl     String?
+  themeColor  String    @default("#D4AF37") // Varsayılan Gold
+  isActive    Boolean   @default(true)
+  suspendedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  users      User[]
+  properties Property[]
+
+  @@map("agencies")
+}
+
+// 2. User (Personel & Brokerlar)
+model User {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String
+  fullName     String
+  role         Role   @default(AGENT)
+  language     String @default("tr")
+  themePref    String @default("dark")
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  properties   Property[]
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@map("users")
+}
+
+// 3. Property (İlanlar / Portföy)
+model Property {
+  id          String         @id @default(cuid())
+  title       String
+  description String         @db.Text
+  price       Decimal        @db.Decimal(14, 2)
+  currency    String         @default("EUR")
+  status      PropertyStatus @default(FOR_SALE)
+
+  // Fiziksel & Mimari Özellikler
+  bedrooms     Int?
+  bathrooms    Int?
+  squareMeters Float?
+  isFurnished  Boolean @default(false)
+
+  // GEO & Konum Verileri (Harita & GEO Arama)
+  latitude  Float?
+  longitude Float?
+  address   String?
+  city      String
+  district  String?
+
+  // AI & Semantik Arama
+  semanticText String?                       @db.Text // AI embedding ve vektör arama için zenginleştirilmiş metin
+  embedding    Unsupported("vector(1536)")? // pgvector 1536-dimensional embedding (OpenAI text-embedding-3-small)
+
+  // SEO & Arama Motoru Optimizasyonu
+  seoTitle   String?
+  seoDesc    String?
+  schemaJson Json? // Schema.org RealEstateListing JSON-LD mikro verisi
+
+  // Multi-Tenant & Sahiplik İlişkileri
+  agencyId String
+  agency   Agency  @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  agentId  String?
+  agent    User?   @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  media        Media[]
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([city, district])
+  @@index([status, price])
+  @@map("properties")
+}
+
+// 4. Media (Görseller, 360 Sanal Tur & Drone)
+model Media {
+  id        String    @id @default(cuid())
+  url       String
+  type      MediaType @default(IMAGE)
+  roomLabel String? // örn: "Mutfak", "Master Süit", "Sonsuzluk Havuzu", "Şarap Mahzeni"
+  isStaged  Boolean   @default(false) // AI ile sanal eşyalandırılmış mı (Virtual Staging)?
+  sortOrder Int       @default(0)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyId])
+  @@map("media")
+}
+
+// 5. Appointment (Randevular & VIP Sunum Talepleri)
+model Appointment {
+  id         String            @id @default(cuid())
+  guestName  String
+  guestPhone String
+  guestEmail String
+  date       DateTime
+  status     AppointmentStatus @default(PENDING)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  agentId String?
+  agent   User?   @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([agentId])
+  @@map("appointments")
+}
