@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
-import { motion, type Variants } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import {
   Sparkles,
   ArrowUpRight,
@@ -14,7 +14,7 @@ import {
   Gem,
   Bot,
 } from "lucide-react";
-import { PublicNav } from "@/components/navigation/public-nav";
+import { Navbar } from "@/components/public/Navbar";
 import { Button } from "@/components/ui/button";
 import { MapExplore, type MapPropertyItem } from "@/components/public/MapExplore";
 import { PropertyInquiryForm } from "@/components/property-inquiry-form";
@@ -26,11 +26,106 @@ export interface HomePageClientProps {
   mapProperties?: MapPropertyItem[];
 }
 
+interface AmbientOrbSpec {
+  id: string;
+  className: string;
+  animateX: number[];
+  animateY: number[];
+  animateScale: number[];
+  duration: number;
+  delay?: number;
+}
+
+const LUXURY_EASE = [0.21, 0.47, 0.32, 0.98] as const;
+
+const SECTION_VIEWPORT = {
+  once: true,
+  amount: 0.08,
+} as const;
+
+const sectionFadeUpVariants: Variants = {
+  hidden: { opacity: 0, y: 36 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.75,
+      ease: LUXURY_EASE,
+    },
+  },
+};
+
+const cardStaggerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.14,
+      delayChildren: 0.08,
+    },
+  },
+};
+
+const cardItemVariants: Variants = {
+  hidden: { opacity: 0, y: 26 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.65,
+      ease: LUXURY_EASE,
+    },
+  },
+};
+
+const AMBIENT_ORBS: AmbientOrbSpec[] = [
+  {
+    id: "orb-gold-top-right",
+    className:
+      "-top-36 right-[10%] h-[540px] w-[540px] bg-gold-500/20 dark:bg-gold-500/[0.17] blur-[140px]",
+    animateX: [0, 48, -32, 0],
+    animateY: [0, -34, 24, 0],
+    animateScale: [1, 1.12, 0.95, 1],
+    duration: 22,
+  },
+  {
+    id: "orb-navy-mid-left",
+    className:
+      "top-[22%] -left-32 h-[620px] w-[620px] bg-navy-700/20 dark:bg-navy-800/45 blur-[155px]",
+    animateX: [0, 46, -24, 0],
+    animateY: [0, 38, -28, 0],
+    animateScale: [1, 1.09, 0.94, 1],
+    duration: 26,
+    delay: 1.5,
+  },
+  {
+    id: "orb-gold-horizon",
+    className:
+      "top-[52%] left-[38%] h-[420px] w-[420px] bg-gold-400/15 dark:bg-gold-400/[0.11] blur-[130px]",
+    animateX: [0, -40, 32, 0],
+    animateY: [0, -28, 30, 0],
+    animateScale: [0.95, 1.14, 1, 0.95],
+    duration: 19,
+    delay: 0.8,
+  },
+  {
+    id: "orb-navy-bottom-right",
+    className:
+      "-bottom-40 -right-24 h-[580px] w-[580px] bg-navy-900/20 dark:bg-navy-900/60 blur-[150px]",
+    animateX: [0, -36, 26, 0],
+    animateY: [0, -38, 18, 0],
+    animateScale: [1, 1.1, 0.96, 1],
+    duration: 24,
+    delay: 2,
+  },
+];
+
 export function HomePageClient({
   initialProperties,
   mapProperties,
 }: HomePageClientProps) {
   const [activeQuery, setActiveQuery] = useState("");
+  const prefersReducedMotion = useReducedMotion();
   const tHero = useTranslations("Hero");
   const tProp = useTranslations("Property");
   const tCap = useTranslations("Capabilities");
@@ -40,6 +135,30 @@ export function HomePageClient({
     "Hastaneye yakın, büyük balkonlu ve deniz manzaralı 3+1 evler",
     "Boğaz kıyısında özel yat iskelesi ve helikopter pistli yalı",
     "Bodrum'da gün batımı manzaralı ve sonsuzluk havuzlu taş villa",
+  ];
+
+  const capabilityCards = [
+    {
+      id: "staging",
+      icon: Sparkles,
+      title: tCap("stagingTitle"),
+      description: tCap("stagingDesc"),
+      href: "/features/ai-staging",
+    },
+    {
+      id: "offMarket",
+      icon: ShieldCheck,
+      title: tCap("offMarketTitle"),
+      description: tCap("offMarketDesc"),
+      href: "/features/off-market",
+    },
+    {
+      id: "multiTenant",
+      icon: SlidersHorizontal,
+      title: tCap("multiTenantTitle"),
+      description: tCap("multiTenantDesc"),
+      href: "/features/multi-tenant",
+    },
   ];
 
   const handleHeroSearch = (queryText: string) => {
@@ -68,23 +187,93 @@ export function HomePageClient({
       y: 0,
       transition: {
         duration: 0.7,
-        ease: [0.21, 0.47, 0.32, 0.98] as const,
+        ease: LUXURY_EASE,
       },
     },
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground transition-colors duration-500">
-      <PublicNav />
+    <div className="relative flex min-h-screen flex-col overflow-x-clip bg-background dark:bg-[#05060a] text-foreground transition-colors duration-500">
+      {/* Global Outermost Animated Gold & Deep Navy Spotlights + Contrast Vignette */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute inset-0 bg-luxury-mesh opacity-70 dark:opacity-90" />
 
-      <main className="flex-1">
+        {AMBIENT_ORBS.map((orb) => (
+          <motion.div
+            key={orb.id}
+            className={`absolute rounded-full will-change-transform ${orb.className}`}
+            animate={
+              prefersReducedMotion
+                ? undefined
+                : {
+                    x: orb.animateX,
+                    y: orb.animateY,
+                    scale: orb.animateScale,
+                  }
+            }
+            transition={{
+              duration: orb.duration,
+              delay: orb.delay ?? 0,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+
+        {/* Semi-transparent Vignette & Atmospheric Scrim to preserve text contrast */}
+        <div className="absolute inset-0 bg-background/30 dark:bg-[#05060a]/45" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 65% at 50% 28%, transparent 0%, hsl(var(--background) / 0.52) 68%, hsl(var(--background) / 0.92) 100%)",
+          }}
+        />
+      </div>
+
+      <Navbar />
+
+      <main className="relative z-10 flex-1">
         {/* Hero Section */}
         <section className="relative min-h-[85vh] flex flex-col justify-center pt-16 pb-20 lg:pt-20 lg:pb-28 overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-luxury-mesh opacity-60" />
-          <div className="pointer-events-none absolute -top-40 right-1/4 h-[500px] w-[500px] rounded-full bg-gold-500/10 blur-[130px]" />
-          <div className="pointer-events-none absolute top-1/2 -left-20 h-96 w-96 rounded-full bg-navy-600/15 blur-[130px]" />
+          {/* Hero Layered Depth: Moving Spotlights + Subtle Architectural Grid + Readability Vignette */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div
+              className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06]"
+              style={{
+                backgroundImage:
+                  "linear-gradient(to right, rgba(197, 155, 39, 0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(197, 155, 39, 0.4) 1px, transparent 1px)",
+                backgroundSize: "72px 72px",
+              }}
+            />
 
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              className="absolute -top-28 left-1/2 h-[460px] w-[720px] -translate-x-1/2 rounded-full bg-gold-500/15 dark:bg-gold-500/[0.14] blur-[140px] will-change-transform"
+              animate={
+                prefersReducedMotion
+                  ? undefined
+                  : {
+                      scale: [1, 1.09, 0.97, 1],
+                      opacity: [0.65, 0.95, 0.72, 0.65],
+                    }
+              }
+              transition={{
+                duration: 14,
+                repeat: Infinity,
+                repeatType: "mirror",
+                ease: "easeInOut",
+              }}
+            />
+
+            <div className="animate-pulse absolute top-1/3 -left-24 h-80 w-80 rounded-full bg-navy-800/30 dark:bg-navy-700/40 blur-[120px] [animation-duration:7s]" />
+            <div className="animate-pulse absolute bottom-10 -right-16 h-72 w-72 rounded-full bg-gold-400/15 dark:bg-gold-500/[0.12] blur-[120px] [animation-duration:9s]" />
+
+            {/* Hero Semi-Transparent Vignette Mask */}
+            <div className="absolute inset-0 bg-gradient-to-b from-background/45 via-transparent to-background/85 dark:from-[#05060a]/55 dark:via-[#05060a]/20 dark:to-[#05060a]/90" />
+          </div>
+
+          <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <motion.div
               variants={containerVariants}
               initial="hidden"
@@ -184,7 +373,14 @@ export function HomePageClient({
         </section>
 
         {/* 6. VITRIN KATALOGU: Gerçek Prisma Verisi + Semantik AI Arama Vitrini */}
-        <section id="vitrin" className="border-t border-border bg-card/25 py-20 lg:py-28">
+        <motion.section
+          id="vitrin"
+          variants={sectionFadeUpVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={SECTION_VIEWPORT}
+          className="border-t border-border bg-card/30 backdrop-blur-[2px] py-20 lg:py-28"
+        >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end mb-12">
               <div>
@@ -205,11 +401,33 @@ export function HomePageClient({
               initialProperties={initialProperties}
               key={`${activeQuery}-${initialProperties.map((p) => p.id).join(",")}`}
             />
+
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+              <Link href="/properties">
+                <Button variant="gold" size="lg" className="gap-2">
+                  <span>Portföy Koleksiyonunun Tamamını Gör</span>
+                  <ArrowUpRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/features/virtual-tour">
+                <Button variant="outline" size="lg" className="gap-2">
+                  <span>Detaylı İncele (360° Sanal Tur)</span>
+                  <ArrowUpRight className="h-4 w-4 text-gold-400" />
+                </Button>
+              </Link>
+            </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* GEO & Mapbox Interactive Discovery Section */}
-        <section id="geo-kesif" className="border-t border-border bg-card/10 py-20 lg:py-24">
+        <motion.section
+          id="geo-kesif"
+          variants={sectionFadeUpVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={SECTION_VIEWPORT}
+          className="border-t border-border bg-card/15 backdrop-blur-[2px] py-20 lg:py-24"
+        >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end mb-8">
               <div>
@@ -225,16 +443,28 @@ export function HomePageClient({
               </p>
             </div>
 
-            <MapExplore
-              properties={
-                mapProperties && mapProperties.length > 0 ? mapProperties : undefined
-              }
-            />
+            <MapExplore properties={mapProperties} />
+
+            <div className="mt-8 flex justify-center">
+              <Link href="/features/geo-explore">
+                <Button variant="outline" size="lg" className="gap-2">
+                  <span>Detaylı İncele</span>
+                  <ArrowUpRight className="h-4 w-4 text-gold-400" />
+                </Button>
+              </Link>
+            </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Unique Capabilities Section */}
-        <section id="off-market" className="border-t border-border py-24">
+        <motion.section
+          id="off-market"
+          variants={sectionFadeUpVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={SECTION_VIEWPORT}
+          className="border-t border-border py-24"
+        >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center">
               <span className="text-xs font-semibold tracking-widest text-gold-500 uppercase">
@@ -245,56 +475,78 @@ export function HomePageClient({
               </h2>
             </div>
 
-            <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3">
-              <div className="rounded-2xl border border-border bg-card/60 p-8 backdrop-blur-xl transition-all hover:border-gold-500/50 hover:shadow-gold-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-gold-500/30 bg-gold-500/10 text-gold-400">
-                  <Sparkles className="h-6 w-6" />
-                </div>
-                <h3 className="mt-6 font-serif text-xl font-bold text-foreground">
-                  {tCap("stagingTitle")}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  {tCap("stagingDesc")}
-                </p>
-              </div>
+            <motion.div
+              variants={cardStaggerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={SECTION_VIEWPORT}
+              className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3"
+            >
+              {capabilityCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <motion.div
+                    key={card.id}
+                    variants={cardItemVariants}
+                    className="flex flex-col rounded-2xl border border-border bg-card/65 p-8 backdrop-blur-xl transition-all hover:border-gold-500/50 hover:shadow-gold-sm"
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-gold-500/30 bg-gold-500/10 text-gold-400">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <h3 className="mt-6 font-serif text-xl font-bold text-foreground">
+                      {card.title}
+                    </h3>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      {card.description}
+                    </p>
+                    <div className="mt-auto pt-6">
+                      <Link
+                        href={card.href}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold-400 transition-colors hover:text-gold-300"
+                      >
+                        <span>Detaylı İncele</span>
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
 
-              <div className="rounded-2xl border border-border bg-card/60 p-8 backdrop-blur-xl transition-all hover:border-gold-500/50 hover:shadow-gold-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-gold-500/30 bg-gold-500/10 text-gold-400">
-                  <ShieldCheck className="h-6 w-6" />
-                </div>
-                <h3 className="mt-6 font-serif text-xl font-bold text-foreground">
-                  {tCap("offMarketTitle")}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  {tCap("offMarketDesc")}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-border bg-card/60 p-8 backdrop-blur-xl transition-all hover:border-gold-500/50 hover:shadow-gold-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-gold-500/30 bg-gold-500/10 text-gold-400">
-                  <SlidersHorizontal className="h-6 w-6" />
-                </div>
-                <h3 className="mt-6 font-serif text-xl font-bold text-foreground">
-                  {tCap("multiTenantTitle")}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  {tCap("multiTenantDesc")}
-                </p>
-              </div>
+            <div className="mt-10 flex justify-center">
+              <Link href="/features/multi-tenant">
+                <Button variant="outline" size="lg" className="gap-2">
+                  <span>Detaylı İncele</span>
+                  <ArrowUpRight className="h-4 w-4 text-gold-400" />
+                </Button>
+              </Link>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Inquiry Section */}
-        <section id="b2b-ortaklik" className="border-t border-border bg-card/20 py-24">
+        <motion.section
+          id="b2b-ortaklik"
+          variants={sectionFadeUpVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={SECTION_VIEWPORT}
+          className="border-t border-border bg-card/20 backdrop-blur-[2px] py-24"
+        >
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <PropertyInquiryForm />
           </div>
-        </section>
+        </motion.section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/40 py-12 backdrop-blur-md">
+      <motion.footer
+        variants={sectionFadeUpVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={SECTION_VIEWPORT}
+        className="relative z-10 border-t border-border bg-card/45 py-12 backdrop-blur-md"
+      >
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 text-center sm:flex-row sm:px-6 sm:text-left lg:px-8">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-gold-500/30 bg-gold-500/10">
@@ -326,7 +578,7 @@ export function HomePageClient({
             © 2026 LUMIÈRE Technologies. {tFooter("rights")}
           </p>
         </div>
-      </footer>
+      </motion.footer>
     </div>
   );
 }

@@ -69,13 +69,17 @@ export default function AgencyTeamManagementPage() {
     text: string;
   } | null>(null);
 
+  const sessionRole = session?.user?.role;
+  const sessionUserId = session?.user?.id;
+
   // Sync role from real NextAuth session if available
   useEffect(() => {
-    if (session?.user?.role) {
-      setActiveRole(session.user.role);
-      setActiveUserId(session.user.id || "user-owner-01");
+    if (sessionRole) {
+      setActiveRole((prev) => (prev === sessionRole ? prev : sessionRole));
+      const nextUserId = sessionUserId || "user-owner-01";
+      setActiveUserId((prev) => (prev === nextUserId ? prev : nextUserId));
     }
-  }, [session]);
+  }, [sessionRole, sessionUserId]);
 
   // Load team data
   const loadData = useCallback(async () => {

@@ -79,12 +79,13 @@ export const ADMIN_NAV_ITEMS: SidebarNavItem[] = [
     icon: Users,
     accentColor: "text-gold-400",
   },
-  {
-    label: "Ajans Ayarları & Tema",
-    href: "/admin/dashboard/settings",
-    icon: Settings,
-  },
 ];
+
+const SETTINGS_NAV_ITEM: SidebarNavItem = {
+  label: "Ajans Ayarları & Tema",
+  href: "/admin/dashboard/settings",
+  icon: Settings,
+};
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -126,9 +127,9 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
   };
 
   const navContent = (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Brand */}
-      <div className="flex h-16 items-center justify-between border-b border-border px-6">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-6">
         <Link href="/admin/dashboard" className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-gold-500/40 bg-gold-gradient shadow-gold-sm">
             <Gem className="h-4 w-4 text-obsidian-950" />
@@ -156,7 +157,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
       </div>
 
       {/* Tenant Indicator */}
-      <div className="mx-4 my-4 rounded-xl border border-gold-500/20 bg-gold-500/5 p-3">
+      <div className="mx-4 my-4 shrink-0 rounded-xl border border-gold-500/20 bg-gold-500/5 p-3">
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-gold-500 shrink-0" />
           <div className="truncate">
@@ -171,7 +172,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
       </div>
 
       {/* Nav Links */}
-      <nav className="flex-1 space-y-1 px-3 overflow-y-auto pb-4">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-4">
         {isSuperAdmin && (
           <div className="mb-3 border-b border-border/70 pb-3">
             <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-gold-500">
@@ -219,24 +220,44 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
         })}
       </nav>
 
-      {/* Bottom Exit & Sign Out */}
-      <div className="border-t border-border p-4 space-y-2.5">
+      {/* Unconditional Fixed Bottom Settings, Exit & Sign Out */}
+      <div className="mt-auto shrink-0 border-t border-border bg-card/80 p-3 space-y-1.5">
         <Link
-          href="/"
-          className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-gold-400"
+          href={SETTINGS_NAV_ITEM.href}
+          onClick={onCloseMobile}
+          className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs transition-all duration-200 ${
+            isItemActive(SETTINGS_NAV_ITEM)
+              ? "bg-gold-500/15 font-semibold text-gold-400 border border-gold-500/30 shadow-gold-sm"
+              : "font-medium text-muted-foreground border border-transparent hover:bg-card hover:text-foreground hover:border-border/60"
+          }`}
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Vitrini Görüntüle</span>
+          <Settings
+            className={`h-4 w-4 shrink-0 ${
+              isItemActive(SETTINGS_NAV_ITEM) ? "text-gold-400" : ""
+            }`}
+          />
+          <span className="truncate">{SETTINGS_NAV_ITEM.label}</span>
         </Link>
 
-        <button
-          type="button"
-          onClick={() => signOut({ callbackUrl: "/admin/login" })}
-          className="flex w-full items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-red-400"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          <span>Güvenli Çıkış Yap</span>
-        </button>
+        <div className="border-t border-border/60 pt-2 px-2 space-y-2">
+          <Link
+            href="/"
+            onClick={onCloseMobile}
+            className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-gold-400"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
+            <span>Vitrini Görüntüle</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/admin/login" })}
+            className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-red-400"
+          >
+            <LogOut className="h-3.5 w-3.5 shrink-0" />
+            <span>Güvenli Çıkış Yap</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -244,7 +265,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/60 backdrop-blur-xl md:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/60 backdrop-blur-xl md:sticky md:top-0 md:flex md:h-screen">
         {navContent}
       </aside>
 
@@ -255,7 +276,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
             className="fixed inset-0 bg-black/75 backdrop-blur-sm"
             onClick={onCloseMobile}
           />
-          <aside className="relative z-10 flex w-72 max-w-[85vw] flex-col border-r border-gold-500/30 bg-[#06070a]/95 backdrop-blur-2xl">
+          <aside className="relative z-10 flex h-full w-72 max-w-[85vw] flex-col border-r border-gold-500/30 bg-[#06070a]/95 backdrop-blur-2xl">
             {navContent}
           </aside>
         </div>

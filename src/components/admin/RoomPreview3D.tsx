@@ -129,11 +129,19 @@ export function RoomPreview3D({
     }
   };
 
+  const cubemapFront = mode === "cubemap" ? cubemapFaces?.front || "" : "";
+  const cubemapBack = mode === "cubemap" ? cubemapFaces?.back || "" : "";
+  const cubemapLeft = mode === "cubemap" ? cubemapFaces?.left || "" : "";
+  const cubemapRight = mode === "cubemap" ? cubemapFaces?.right || "" : "";
+  const cubemapTop = mode === "cubemap" ? cubemapFaces?.top || "" : "";
+  const cubemapBottom = mode === "cubemap" ? cubemapFaces?.bottom || "" : "";
+
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
 
     let isDisposed = false;
+    let lastProjectionSig: string | null = null;
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 520;
 
@@ -180,13 +188,13 @@ export function RoomPreview3D({
       const cubeLoader = new THREE.CubeTextureLoader();
       cubeLoader.setCrossOrigin("anonymous");
 
-      const faces: CubemapFaces = cubemapFaces || {
-        front: "",
-        back: "",
-        left: "",
-        right: "",
-        top: "",
-        bottom: "",
+      const faces: CubemapFaces = {
+        front: cubemapFront,
+        back: cubemapBack,
+        left: cubemapLeft,
+        right: cubemapRight,
+        top: cubemapTop,
+        bottom: cubemapBottom,
       };
 
       // Three.js CubeTextureLoader order: [+X (Right), -X (Left), +Y (Top), -Y (Bottom), +Z (Front), -Z (Back)]
@@ -401,7 +409,19 @@ export function RoomPreview3D({
         };
       }
 
-      setMarkerPositions(nextPositions);
+      const projectionSig = allItems
+        .map((item) => {
+          const pos = nextPositions[item.id];
+          return pos
+            ? `${pos.id}:${Math.round(pos.screenX)}:${Math.round(pos.screenY)}:${pos.visible ? 1 : 0}`
+            : item.id;
+        })
+        .join("|");
+
+      if (projectionSig !== lastProjectionSig) {
+        lastProjectionSig = projectionSig;
+        setMarkerPositions(nextPositions);
+      }
     };
 
     animate();
@@ -419,7 +439,16 @@ export function RoomPreview3D({
       sphereMat.dispose();
       renderer.dispose();
     };
-  }, [mode, panoramaUrl, cubemapFaces]);
+  }, [
+    mode,
+    panoramaUrl,
+    cubemapFront,
+    cubemapBack,
+    cubemapLeft,
+    cubemapRight,
+    cubemapTop,
+    cubemapBottom,
+  ]);
 
   return (
     <div className="relative w-full h-[520px] sm:h-[580px] overflow-hidden rounded-2xl border border-gold-500/30 bg-[#04060a] select-none">

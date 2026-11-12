@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search,
   Sparkles,
@@ -34,11 +34,19 @@ const SAMPLE_NATURAL_QUERIES = [
   "Fransız Rivierası'nda zeytin ağaçlarıyla çevrili sahil malikânesi",
 ];
 
+const EMPTY_PROPERTIES: PropertyCardItem[] = [];
+
 export function SemanticSearch({
   initialQuery = "",
-  initialProperties = [],
+  initialProperties = EMPTY_PROPERTIES,
   className = "",
 }: SemanticSearchProps) {
+  const initialPropsRef = useRef(initialProperties);
+  initialPropsRef.current = initialProperties;
+  const initialPropsSignature = initialProperties
+    .map((p) => `${p.id}:${p.status}:${p.hasPanorama360}`)
+    .join("|");
+
   const [query, setQuery] = useState(initialQuery);
   const [activeSearchedQuery, setActiveSearchedQuery] = useState(initialQuery);
   const [results, setResults] = useState<SemanticSearchResultItem[]>(
@@ -54,9 +62,10 @@ export function SemanticSearch({
   // Execute Semantic Search API Request
   const executeSearch = useCallback(
     async (searchQuery: string) => {
-      if (!searchQuery.trim() && initialProperties.length > 0) {
+      const hasInitialProps = initialPropsSignature.length > 0;
+      if (!searchQuery.trim() && hasInitialProps) {
         setActiveSearchedQuery("");
-        setResults(initialProperties.map((p) => ({ ...p })));
+        setResults(initialPropsRef.current.map((p) => ({ ...p })));
         setSearchEngine("Prisma PostgreSQL (Canlı)");
         setHasSearched(false);
         return;
@@ -86,19 +95,19 @@ export function SemanticSearch({
         setHasSearched(Boolean(searchQuery.trim()));
       }
     },
-    [initialProperties]
+    [initialPropsSignature]
   );
 
   // Initial load: use SSR Prisma initialProperties directly unless a query is active
   useEffect(() => {
-    if (!initialQuery.trim() && initialProperties.length > 0) {
-      setResults(initialProperties.map((p) => ({ ...p })));
+    if (!initialQuery.trim() && initialPropsSignature.length > 0) {
+      setResults(initialPropsRef.current.map((p) => ({ ...p })));
       setSearchEngine("Prisma PostgreSQL (Canlı)");
       setHasSearched(false);
       return;
     }
     executeSearch(initialQuery);
-  }, [executeSearch, initialQuery, initialProperties]);
+  }, [executeSearch, initialQuery, initialPropsSignature]);
 
   // Handle Search Submit
   const handleSubmit = (e: React.FormEvent) => {

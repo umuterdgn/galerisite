@@ -327,10 +327,36 @@ export function VirtualTour({
   className = "",
 }: VirtualTourProps) {
   // If Prisma Media contains PANORAMA_360 items, combine or map them
-  const rooms = React.useMemo(() => {
-    if (customRooms && customRooms.length > 0) return customRooms;
+  const mediaRef = useRef(media);
+  mediaRef.current = media;
+  const customRoomsRef = useRef(customRooms);
+  customRoomsRef.current = customRooms;
 
-    const panoramaMedia = media.filter((m) => m.type === "PANORAMA_360");
+  const roomsKey = React.useMemo(() => {
+    if (customRooms && customRooms.length > 0) {
+      return customRooms
+        .map(
+          (r) =>
+            `${r.id}:${r.name}:${typeof r.panorama === "string" ? r.panorama : "cube"}:${(r.links || []).length}:${(r.hotspots || []).length}`
+        )
+        .join("|");
+    }
+    return media
+      .filter((m) => m.type === "PANORAMA_360")
+      .map((m) => `${m.id}:${m.url}:${m.roomLabel || ""}`)
+      .join("|");
+  }, [media, customRooms]);
+
+  // Build room list dynamically from customRooms prop or Prisma media if available
+  const rooms = React.useMemo(() => {
+    if (!roomsKey) return DEFAULT_LUXURY_ROOMS;
+
+    const latestCustomRooms = customRoomsRef.current;
+    if (latestCustomRooms && latestCustomRooms.length > 0) {
+      return latestCustomRooms;
+    }
+
+    const panoramaMedia = mediaRef.current.filter((m) => m.type === "PANORAMA_360");
     if (panoramaMedia.length > 0) {
       // Map Prisma media items into rooms
       return panoramaMedia.map((m, index) => {
@@ -368,7 +394,7 @@ export function VirtualTour({
     }
 
     return DEFAULT_LUXURY_ROOMS;
-  }, [media, customRooms, propertyTitle]);
+  }, [roomsKey, propertyTitle]);
 
   const [currentRoomId, setCurrentRoomId] = useState<string>(
     rooms.some((r) => r.id === initialRoomId) ? initialRoomId : rooms[0]?.id || "giris"
@@ -518,9 +544,10 @@ export function VirtualTour({
         virtualTour.addEventListener("node-changed", (event: unknown) => {
           if (!isSubscribed) return;
           const evt = event as { node?: { id?: string } };
-          if (evt?.node?.id) {
-            setCurrentRoomId(evt.node.id);
-            setSelectedHotspot(null);
+          const nextNodeId = evt?.node?.id;
+          if (nextNodeId) {
+            setCurrentRoomId((prev) => (prev === nextNodeId ? prev : nextNodeId));
+            setSelectedHotspot((prev) => (prev === null ? prev : null));
           }
         });
 

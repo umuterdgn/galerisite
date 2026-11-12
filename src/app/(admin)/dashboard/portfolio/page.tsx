@@ -49,6 +49,8 @@ const propertyFormSchema = z.object({
   city: z.string().min(2, "Şehir zorunludur."),
   district: z.string().min(2, "İlçe/Semt zorunludur."),
   address: z.string().min(3, "Adres bilgisi zorunludur."),
+  latitude: z.number().min(-90, "Enlem -90 ile 90 arasında olmalıdır.").max(90, "Enlem -90 ile 90 arasında olmalıdır.").nullable().optional(),
+  longitude: z.number().min(-180, "Boylam -180 ile 180 arasında olmalıdır.").max(180, "Boylam -180 ile 180 arasında olmalıdır.").nullable().optional(),
   imageUrl: z.string().url("Geçerli bir görsel URL'si giriniz."),
 });
 
@@ -97,6 +99,8 @@ export default function PortfolioManagementPage() {
       city: "Istanbul",
       district: "Bebek / Beşiktaş",
       address: "Cevdet Paşa Caddesi No: 42",
+      latitude: null,
+      longitude: null,
       imageUrl: PRESET_IMAGES[0],
     },
   });
@@ -136,6 +140,8 @@ export default function PortfolioManagementPage() {
       city: "Istanbul",
       district: "Bebek / Beşiktaş",
       address: "Cevdet Paşa Caddesi No: 42",
+      latitude: null,
+      longitude: null,
       imageUrl: PRESET_IMAGES[0],
     });
     setIsModalOpen(true);
@@ -158,6 +164,8 @@ export default function PortfolioManagementPage() {
       city: prop.city,
       district: prop.district,
       address: prop.address,
+      latitude: prop.latitude ?? null,
+      longitude: prop.longitude ?? null,
       imageUrl: prop.imageUrl || PRESET_IMAGES[0],
     });
     setIsModalOpen(true);
@@ -662,6 +670,49 @@ export default function PortfolioManagementPage() {
                     {...register("address")}
                     className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-foreground focus:border-gold-500 focus:outline-none"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                    Enlem (Latitude — GEO Harita)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="Örn: 41.1218"
+                    {...register("latitude", {
+                      setValueAs: (val: string) =>
+                        val === "" || val === null || val === undefined
+                          ? null
+                          : Number(val),
+                    })}
+                    className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-foreground focus:border-gold-500 focus:outline-none"
+                  />
+                  {errors.latitude && (
+                    <p className="text-red-400 mt-1">{errors.latitude.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                    Boylam (Longitude — GEO Harita)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="Örn: 29.0712"
+                    {...register("longitude", {
+                      setValueAs: (val: string) =>
+                        val === "" || val === null || val === undefined
+                          ? null
+                          : Number(val),
+                    })}
+                    className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-foreground focus:border-gold-500 focus:outline-none"
+                  />
+                  {errors.longitude && (
+                    <p className="text-red-400 mt-1">{errors.longitude.message}</p>
+                  )}
                 </div>
               </div>
 

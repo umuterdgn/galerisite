@@ -502,8 +502,9 @@ export function TourBuilder() {
         virtualTour.addEventListener("node-changed", (event: unknown) => {
           if (!isSubscribed) return;
           const e = event as { node?: { id?: string } };
-          if (e?.node?.id) {
-            setActiveRoomId(e.node.id);
+          const nextRoomId = e?.node?.id;
+          if (nextRoomId) {
+            setActiveRoomId((prev) => (prev === nextRoomId ? prev : nextRoomId));
           }
         });
       } catch (err) {

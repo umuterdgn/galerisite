@@ -294,13 +294,39 @@ export default function TourBuilderPage() {
     })();
   }, [selectedPropertyId]);
 
-  // Keep cubemapFaces synced with active room
+  const activeCubemapKey = activeRoom.cubemapFaces
+    ? [
+        activeRoom.cubemapFaces.front,
+        activeRoom.cubemapFaces.back,
+        activeRoom.cubemapFaces.left,
+        activeRoom.cubemapFaces.right,
+        activeRoom.cubemapFaces.top,
+        activeRoom.cubemapFaces.bottom,
+      ].join("\n")
+    : "";
+
+  // Keep cubemapFaces synced with active room without identity churn
   useEffect(() => {
-    if (activeRoom.cubemapFaces) {
-      setCubemapFaces(activeRoom.cubemapFaces);
+    if (activeCubemapKey) {
+      const [front = "", back = "", left = "", right = "", top = "", bottom = ""] =
+        activeCubemapKey.split("\n");
+      setCubemapFaces((prev) => {
+        if (
+          prev.front === front &&
+          prev.back === back &&
+          prev.left === left &&
+          prev.right === right &&
+          prev.top === top &&
+          prev.bottom === bottom
+        ) {
+          return prev;
+        }
+        return { front, back, left, right, top, bottom };
+      });
     }
-    setCaptureOption(activeRoom.captureMode || "equirectangular");
-  }, [activeRoom.id, activeRoom.cubemapFaces, activeRoom.captureMode]);
+    const nextCapture = activeRoom.captureMode || "equirectangular";
+    setCaptureOption((prev) => (prev === nextCapture ? prev : nextCapture));
+  }, [activeRoom.id, activeCubemapKey, activeRoom.captureMode]);
 
   // SEÇENEK 1: 360 Kamera (2:1 Equirectangular) -> Cloudinary + Prisma PANORAMA_360
   const handleEquirectangularFile = useCallback(

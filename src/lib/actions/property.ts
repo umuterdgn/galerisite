@@ -13,6 +13,12 @@ function revalidatePublicShowcase(propertyId?: string) {
   revalidatePath("/", "layout");
   revalidatePath("/tr");
   revalidatePath("/en");
+  revalidatePath("/properties");
+  revalidatePath("/tr/properties");
+  revalidatePath("/en/properties");
+  revalidatePath("/features/geo-explore");
+  revalidatePath("/tr/features/geo-explore");
+  revalidatePath("/en/features/geo-explore");
   revalidatePath("/admin/dashboard/portfolio");
   revalidatePath("/admin/dashboard");
   if (propertyId) {
@@ -61,6 +67,8 @@ export interface UpsertPropertyInput {
   city: string;
   district: string;
   address: string;
+  latitude?: number | null;
+  longitude?: number | null;
   imageUrl: string;
 }
 
@@ -306,6 +314,14 @@ export async function createAdminProperty(input: UpsertPropertyInput) {
         city: input.city,
         district: input.district,
         address: input.address,
+        latitude:
+          typeof input.latitude === "number" && Number.isFinite(input.latitude)
+            ? input.latitude
+            : null,
+        longitude:
+          typeof input.longitude === "number" && Number.isFinite(input.longitude)
+            ? input.longitude
+            : null,
         semanticText,
         agencyId: agency.id,
         ...(session?.user?.id ? { agentId: session.user.id } : {}),
@@ -344,6 +360,8 @@ export async function createAdminProperty(input: UpsertPropertyInput) {
         city: created.city,
         district: created.district ?? input.district,
         address: created.address ?? input.address,
+        latitude: created.latitude,
+        longitude: created.longitude,
         imageUrl: created.media[0]?.url || input.imageUrl,
         hasPanorama360: false,
         isStaged: false,
@@ -409,6 +427,14 @@ export async function updateAdminProperty(id: string, input: UpsertPropertyInput
         city: input.city,
         district: input.district,
         address: input.address,
+        latitude:
+          typeof input.latitude === "number" && Number.isFinite(input.latitude)
+            ? input.latitude
+            : null,
+        longitude:
+          typeof input.longitude === "number" && Number.isFinite(input.longitude)
+            ? input.longitude
+            : null,
         semanticText,
       },
       include: { media: true },
